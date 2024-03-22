@@ -19,7 +19,7 @@ int GetNumSets(void);
 int GetNumStartEndPts(void);
 int GetNumPts(void);
 double* CreateDataset(int arrSize);
-void SortArray(int*, int);
+void SortArray(double* arr, int arrSize);
 double Average(double* arr, int arrSize);
 void CreateDisplayStr(char* str, int* nPtsToPrint, int atStart);
 
@@ -28,8 +28,7 @@ int main(void) {
     srand((unsigned int) time(NULL));
     
     int nSets = GetNumSets();
-//    int nPtsToPrint = GetNumStartEndPts();
-    int nPtsToPrint = 2;
+    int nPtsToPrint = GetNumStartEndPts();
     double* dataSet[nSets + 1];
     dataSet[nSets] = NULL;
     int ptsPerRow[nSets]; //TODO: Get rid of this array if possible. See if there is a better way to get the number of pts in a row of the ragged array and pass to functions like average() without this
@@ -66,6 +65,11 @@ int main(void) {
     double** itr = dataSet;
     int* ptsPerRowP = ptsPerRow;
     while (*itr != NULL) {
+        SortArray(*itr, *ptsPerRow);
+//        for (int i = 0; i < *ptsPerRow; i++) { //TODO: Remove this statement. Just for debug.
+//            printf("%lf\n", (*itr)[i]);
+//        }
+        
         double average = Average(*itr, *ptsPerRowP);
         char formatStr[OUTPUT_STR_SIZE] = "";
         char startPts[OUTPUT_STR_SIZE] = "";
@@ -85,15 +89,15 @@ int main(void) {
         switch(nPtsToPrint) {
             case 2:
                 sprintf(startPts, formatStr, *arr, *(arr + 1));
-                sprintf(endPts, formatStr, *(end - 1), *end);
+                sprintf(endPts, formatStr, *(end - 2), *(end - 1));
                 break;
             case 3:
                 sprintf(startPts, formatStr, *arr, *(arr + 1), *(arr + 2));
-                sprintf(endPts, formatStr, *(end - 2), *(end - 1), *end);
+                sprintf(endPts, formatStr, *(end - 3), *(end - 2), *(end - 1));
                 break;
             case 4:
                 sprintf(startPts, formatStr, *arr, *(arr + 1), *(arr + 2), *(arr + 3));
-                sprintf(endPts, formatStr, *(end - 3), *(end - 2), *(end - 1), *end);
+                sprintf(endPts, formatStr, *(end - 4), *(end - 3), *(end - 2), *(end - 1));
                 break;
             default:
                 sprintf(startPts, "Error. No data.");
@@ -141,6 +145,20 @@ double* CreateDataset(int arrSize) {
     }
     
     return pArr;
+}
+
+void SortArray(double* arr, int arrSize) {
+    for (double* arrPoint = arr; arrPoint < arr + arrSize; arrPoint++) {
+        double* min = arrPoint;
+        for (double* arrNestedPoint = arrPoint; arrNestedPoint < arr + arrSize; arrNestedPoint++) {
+            if (*arrNestedPoint < *min) {
+                min = arrNestedPoint;
+            }
+        }
+        double temp = *arrPoint;
+        *arrPoint = *min;
+        *min = temp;
+    }
 }
 
 double Average(double* arr, int arrSize) {
