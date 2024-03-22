@@ -5,13 +5,15 @@
 //TODO: Ask professor if I need verification code for this assignment
 //TODO: update function declerations to have parameter names matching definitions
 //TODO: Add documentation describing what each function does
+//TODO: Rewrite while statements looping through pointers to be  for loops looping through pointers
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
 
-#define OUTPUT_STR_SIZE 22
+#define OUTPUT_STR_SIZE 29
+#define HEADER_STR_SIZE 61
 
 int GetNumSets(void);
 int GetNumStartEndPts(void);
@@ -25,17 +27,14 @@ int main(void) {
     
     srand((unsigned int) time(NULL));
     
-    for(int i = 0; i < 1000; i++) {
-        printf("%d\n", GetNumStartEndPts());
-    }
-    
     int nSets = GetNumSets();
-    int nPtsToPrint = GetNumStartEndPts();
+//    int nPtsToPrint = GetNumStartEndPts();
+    int nPtsToPrint = 2;
     double* dataSet[nSets + 1];
     dataSet[nSets] = NULL;
     int ptsPerRow[nSets]; //TODO: Get rid of this array if possible. See if there is a better way to get the number of pts in a row of the ragged array and pass to functions like average() without this
-    
-    //TODO: Ask professor if using this notation to get array started is alright? I'm starting this way because I had issues where the pointers in the ragged array would randomly be set to NULL values before they're initialized ending the loop prematurely when I attempted to loop by detecting NULL pointers.
+
+    //TODO: Update array to use pointer notation
     for (int i = 0; i < nSets; i++) {
         int nPts = GetNumPts();
         ptsPerRow[i] = nPts;
@@ -43,8 +42,27 @@ int main(void) {
     }
     
     printf("HW #10, Noah Turnquist\n\n");
-    printf("Set #  Npts  Average  ___First Data Pts___     ___Last Data Pts____\n");
     
+    //TODO: Put all of this into a function
+    char headerStr[HEADER_STR_SIZE];
+    
+    switch(nPtsToPrint) {
+        case 2:
+            strncpy(headerStr, "First Data Pts     Last Data Pts", HEADER_STR_SIZE - 1);
+            break;
+        case 3:
+            strncpy(headerStr, " ___First Data Pts___     ___Last Data Pts____", HEADER_STR_SIZE - 1);
+            break;
+        case 4:
+            strncpy(headerStr, " ______First Data Pts_______     _______Last Data Pts_______", HEADER_STR_SIZE - 1);
+            break;
+        default:
+            strncpy(headerStr, "Error: something went wrong.", HEADER_STR_SIZE - 1);
+    }
+    
+    printf("Set #  Npts  Average %s\n", headerStr);
+    
+    //TODO: split this loop into some seperate functions
     double** itr = dataSet;
     int* ptsPerRowP = ptsPerRow;
     while (*itr != NULL) {
@@ -62,14 +80,9 @@ int main(void) {
             }
         }
         
-//        printf("NPtstoPrint: %d, FormatStr: %s\n", nPtsToPrint, formatStr); //TODO: Remove this
         double* end = *itr + *ptsPerRow;
         double* arr = *itr;
         switch(nPtsToPrint) {
-            case 1:
-                sprintf(startPts, formatStr, *arr);
-                sprintf(endPts, formatStr, *end);
-                break;
             case 2:
                 sprintf(startPts, formatStr, *arr, *(arr + 1));
                 sprintf(endPts, formatStr, *(end - 1), *end);
@@ -78,12 +91,16 @@ int main(void) {
                 sprintf(startPts, formatStr, *arr, *(arr + 1), *(arr + 2));
                 sprintf(endPts, formatStr, *(end - 2), *(end - 1), *end);
                 break;
+            case 4:
+                sprintf(startPts, formatStr, *arr, *(arr + 1), *(arr + 2), *(arr + 3));
+                sprintf(endPts, formatStr, *(end - 3), *(end - 2), *(end - 1), *end);
+                break;
             default:
                 sprintf(startPts, "Error. No data.");
                 sprintf(endPts, "Error. No data.");
         }
         
-        printf("  %d   %5d   %2.4lf %21s ... %s\n", (int) (itr - dataSet), *ptsPerRowP, average, startPts, endPts);
+        printf("  %d   %5d   %2.4lf  %s ... %s\n", (int) (itr - dataSet), *ptsPerRowP, average, startPts, endPts);
         
         free(*itr);
         *itr = NULL;
