@@ -1,8 +1,5 @@
 //HW #10, Noah Turnquist
 
-//TODO: Ask professor if I need verification code for this assignment
-//TODO: Ask professor if there is a better way to get nPts for each loop iteration in the second main loop. Currently creating a second array to store that info.
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -28,8 +25,8 @@ int main(void) {
     int nPtsToPrint = GetNumStartEndPts();
     double* dataSet[nSets + 1];
     dataSet[nSets] = NULL;
-    int ptsPerRow[nSets]; //TODO: Get rid of this array if possible. See if there is a better way to get the number of pts in a row of the ragged array and pass to functions like average() without this
-
+    int ptsPerRow[nSets];
+    
     int* ptsPerRowItr = ptsPerRow;
     for (double** itr = dataSet; itr < dataSet + nSets; itr++, ptsPerRowItr++) {
         int nPts = GetNumPts();
