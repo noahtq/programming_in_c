@@ -40,9 +40,10 @@ int main(void) {
     
     double** itr = dataSet;
     int* ptsPerRowP = ptsPerRow;
+    
     while (*itr != NULL) {
         double average = Average(*itr, *ptsPerRowP);
-        SortArray(*itr, *ptsPerRow);
+        SortArray(*itr, *ptsPerRowP);
         
         PrintDisplayStrs(nPtsToPrint, (int) (itr - dataSet), *ptsPerRowP, average, *itr);
         
@@ -101,9 +102,10 @@ void SortArray(double* arr, int arrSize) {
      Sorting algorithm is Selection Sort - Time Complexity: O(n^2) i.e. Quadratic Time
      */
     
-    for (double* arrPoint = arr; arrPoint < arr + arrSize; arrPoint++) {
+    double* end = arr + arrSize;
+    for (double* arrPoint = arr; arrPoint < end; arrPoint++) {
         double* min = arrPoint;
-        for (double* arrNestedPoint = arrPoint; arrNestedPoint < arr + arrSize; arrNestedPoint++) {
+        for (double* arrNestedPoint = arrPoint; arrNestedPoint < end; arrNestedPoint++) {
             if (*arrNestedPoint < *min) {
                 min = arrNestedPoint;
             }
@@ -163,6 +165,7 @@ void PrintDisplayStrs(int nPtsToPrint, int index, int nPts, double average, doub
     char formatStr[OUTPUT_STR_SIZE] = "";
     char startPts[OUTPUT_STR_SIZE] = "";
     char endPts[OUTPUT_STR_SIZE] = "";
+    double* end = arr + nPts;
     
     //Create format string with correct number of type identifiers based
     //on nPtsToPrint
@@ -173,7 +176,6 @@ void PrintDisplayStrs(int nPtsToPrint, int index, int nPts, double average, doub
         }
     }
     
-    double* end = arr + nPts;
     switch(nPtsToPrint) {
         case 2:
             sprintf(startPts, formatStr, *arr, *(arr + 1));
@@ -195,15 +197,18 @@ void PrintDisplayStrs(int nPtsToPrint, int index, int nPts, double average, doub
     printf("  %d   %5d   %2.4lf  %s ... %s\n", index, nPts, average, startPts, endPts);
 }
 
+
 //HW #10, Noah Turnquist
 //
-//Set #  Npts  Average  ______First Data Pts_______     _______Last Data Pts_______
-//  0    4000   4.9845  0.0017 0.0053 0.0061 0.0061 ... 9.9966 9.9973 9.9976 9.9990
-//  1    4000   5.1023  0.0055 0.0068 0.0110 0.0131 ... 9.9926 9.9941 9.9966 9.9984
-//  2    7000   5.0030  0.0006 0.0011 0.0023 0.0046 ... 0.9440 5.4350 5.6009 4.6708
-//  3    7000   5.0284  0.0013 0.0032 0.0036 0.0065 ... 8.4237 6.9703 9.0785 3.0303
-//  4    7000   5.0452  0.0012 0.0070 0.0159 0.0204 ... 8.8810 2.5362 6.6598 0.5464
-//  5    4000   5.0170  0.0003 0.0006 0.0024 0.0036 ... 9.9922 9.9966 9.9972 9.9993
+//Set #  Npts  Average  ___First Data Pts___     ___Last Data Pts____
+//  0    9000   5.0074  0.0005 0.0028 0.0035 ... 9.9921 9.9979 9.9983
+//  1   10000   4.9980  0.0010 0.0023 0.0029 ... 9.9969 9.9995 9.9997
+//  2    5000   4.9981  0.0033 0.0049 0.0055 ... 9.9942 9.9979 9.9980
+//  3    9000   4.9840  0.0010 0.0018 0.0035 ... 9.9984 9.9992 9.9993
+//  4    9000   5.0385  0.0009 0.0013 0.0030 ... 9.9964 9.9983 9.9995
+//  5    8000   5.0061  0.0010 0.0036 0.0044 ... 9.9970 9.9985 9.9998
+//  6   11000   4.9776  0.0008 0.0036 0.0065 ... 9.9995 9.9996 9.9999
+//  7    8000   5.0027  0.0001 0.0020 0.0067 ... 9.9969 9.9980 9.9990
 //
 //*** Bye ***
 //Program ended with exit code: 0

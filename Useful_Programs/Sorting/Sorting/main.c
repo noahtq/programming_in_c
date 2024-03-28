@@ -39,12 +39,12 @@ int BinarySearch(int arr[], int arr_size, int target, int output_time);
 
 int main(void) {
     int random_numbers[ARRAY_SIZE];
-//    int bubble_sorted_numbers[ARRAY_SIZE];
-//    int insertion_sorted_numbers[ARRAY_SIZE];
+    int bubble_sorted_numbers[ARRAY_SIZE];
+    int insertion_sorted_numbers[ARRAY_SIZE];
     int selection_sorted_numbers[ARRAY_SIZE];
-//    int merge_sorted_numbers[ARRAY_SIZE];
-//    int quick_sorted_numbers[ARRAY_SIZE];
-//    int radix_sorted_numbers[ARRAY_SIZE];
+    int merge_sorted_numbers[ARRAY_SIZE];
+    int quick_sorted_numbers[ARRAY_SIZE];
+    int radix_sorted_numbers[ARRAY_SIZE];
 //    
 //    int target_index;
     
@@ -57,14 +57,14 @@ int main(void) {
 //    CopyArray(random_numbers, insertion_sorted_numbers, ARRAY_SIZE);
 //    InsertionSort(insertion_sorted_numbers, ARRAY_SIZE, 1);
 //    
-    CopyArray(random_numbers, selection_sorted_numbers, ARRAY_SIZE);
-    SelectionSort(selection_sorted_numbers, ARRAY_SIZE, 1);
+//    CopyArray(random_numbers, selection_sorted_numbers, ARRAY_SIZE);
+//    SelectionSort(selection_sorted_numbers, ARRAY_SIZE, 1);
 //    
-//    CopyArray(random_numbers, merge_sorted_numbers, ARRAY_SIZE);
-//    MergeSort(merge_sorted_numbers, ARRAY_SIZE, 1);
+    CopyArray(random_numbers, merge_sorted_numbers, ARRAY_SIZE);
+    MergeSort(merge_sorted_numbers, ARRAY_SIZE, 1);
 //    
-//    CopyArray(random_numbers, quick_sorted_numbers, ARRAY_SIZE);
-//    QuickSort(quick_sorted_numbers, 0, ARRAY_SIZE - 1, ARRAY_SIZE, 1);
+    CopyArray(random_numbers, quick_sorted_numbers, ARRAY_SIZE);
+    QuickSort(quick_sorted_numbers, 0, ARRAY_SIZE - 1, ARRAY_SIZE, 1);
 //    
 //    CopyArray(random_numbers, radix_sorted_numbers, ARRAY_SIZE);
 //    RadixSort(radix_sorted_numbers, ARRAY_SIZE, 1);
