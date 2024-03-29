@@ -89,6 +89,52 @@ int FMin(int x, int y) {
     return x < y ? x : y;
 }
 
+//HW #11, Noah Turnquist
+//Enter string to be searched. (Blank line to quit): hello
+//Enter character to search for: l
+//The character 'l' was found 2 times.
+//The first 2 matches are at:  2  3 in the string:
+//hello
+//  ^^
+//
+//Enter string to be searched. (Blank line to quit): This is fun
+//Enter character to search for: h
+//The character 'h' was found 1 times.
+//The first 1 matches are at:  1 in the string:
+//This is fun
+// ^
+//
+//Enter string to be searched. (Blank line to quit): Green
+//Enter character to search for: a
+//The character 'a' was found 0 times.
+//The first 0 matches are at: in the string:
+//Green
+//      
+//
+//Enter string to be searched. (Blank line to quit): aaaaaaaaaaaaaaaaaaaaa
+//Enter character to search for: a
+//The character 'a' was found 21 times.
+//The first 10 matches are at:  0  1  2  3  4  5  6  7  8  9 in the string:
+//aaaaaaaaaaaaaaaaaaaaa
+//^^^^^^^^^^
+//
+//Enter string to be searched. (Blank line to quit): adadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadad
+//Enter character to search for: d
+//The character 'd' was found 19 times.
+//The first 10 matches are at:  1  3  5  7  9 11 13 15 17 19 in the string:
+//adadadadadadadadadadadadadadadadadadada
+// ^ ^ ^ ^ ^ ^ ^ ^ ^ ^
+//
+//Enter string to be searched. (Blank line to quit): 123456678
+//Enter character to search for: 6
+//The character '6' was found 2 times.
+//The first 2 matches are at:  5  6 in the string:
+//123456678
+//     ^^
+//
+//Enter string to be searched. (Blank line to quit):
+//Program ended with exit code: 0
+
 
 //VERIFICATION
 /*
