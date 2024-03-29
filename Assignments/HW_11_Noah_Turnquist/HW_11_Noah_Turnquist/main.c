@@ -1,11 +1,7 @@
 //HW #11, Noah Turnquist
 
 //TODO: CHECK TO MAKE SURE PROGRAM DOESN'T CONTAIN ANY STRCHR(), STRRCHR(), or MEMCHR() calls.
-//TODO: Email Ken: ask about fpurge()
-//TODO: Email Ken: See if I should discard newline character at the end string when reading it in from fgets()
-//TODO: Email Ken: Had to use type long for location array to get rid of some compiler warning. Is this okay?
 //TODO: Make loops more efficient using pointer notation?
-//TODO: Keep or discard newline character in userString?
 //TODO: Break up program into more discrete functions for better readability and maintanability
 
 #include <stdio.h>
@@ -15,12 +11,12 @@
 #define MAXMATCHES 10
 #define FLUSH while(getchar() != '\n')
 
-int CharIsAt(char* pStr, char ch, long loc[], int mLoc);
+int CharIsAt(char* pStr, char ch, int loc[], int mLoc);
 int FMin(int x, int y);
 
 int main(void) {
     char userString[SIZE];
-    long locations[MAXMATCHES];
+    int locations[MAXMATCHES];
     char searchCh;
     int matches;
     
@@ -47,7 +43,7 @@ int main(void) {
         int matchesToPrint = FMin(matches, MAXMATCHES);
         printf("The first %d matches are at: ", matchesToPrint);
         for (int i = 0; i < matchesToPrint; i++) {
-            printf("%2ld ", locations[i]);
+            printf("%2d ", locations[i]);
         }
         printf("in the string:\n");
         printf("%s", userString);
@@ -59,7 +55,7 @@ int main(void) {
         }
         
         for (int i = 0; i < matchesToPrint; i++) {
-            long matchIndex = locations[i];
+            int matchIndex = locations[i];
             underline[matchIndex] = '^';
         }
         
@@ -71,13 +67,13 @@ int main(void) {
     return 0;
 }
 
-int CharIsAt(char* pStr, char ch, long loc[], int mLoc) {
+int CharIsAt(char* pStr, char ch, int loc[], int mLoc) {
     int matches = 0;
     
     for (char* itr = pStr; *itr != '\0'; itr++) {
         if (*itr == ch) {
             if (matches < mLoc) {
-                loc[matches] = (long) ((long) itr - (long) pStr);
+                loc[matches] = (int) (itr - pStr);
             }
             matches++;
         }
