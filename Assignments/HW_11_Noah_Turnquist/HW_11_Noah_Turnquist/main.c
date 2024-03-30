@@ -1,9 +1,5 @@
 //HW #11, Noah Turnquist
 
-//TODO: CHECK TO MAKE SURE PROGRAM DOESN'T CONTAIN ANY STRCHR(), STRRCHR(), or MEMCHR() calls.
-//TODO: Make loops more efficient using pointer notation?
-//TODO: Break up program into more discrete functions for better readability and maintanability
-
 #include <stdio.h>
 #include <string.h>
 
@@ -23,17 +19,25 @@ int main(void) {
     printf("HW #11, Noah Turnquist\n");
     printf("Enter string to be searched. (Blank line to quit): ");
     while (*fgets(userString, SIZE, stdin) != '\n') {
-        fpurge(stdin); //TODO: Ask prof is this is an okay way to clear the buffer
         
-        //Forcing the second to last element in string to be a newline...
-        //If the user enters more than SIZE - 1 characters.
-        //Ending of string will look like [..., \n, \0]
-        if (strlen(userString) >= SIZE - 1) {
+        //Check if there are any newline characters in string.
+        //If newline character found set foundIt to true and exit loop
+        int foundIt = 0;
+        for (char* itr = userString; itr < userString + (SIZE - 1) && !foundIt; itr++) {
+            if (*itr == '\n') {
+                foundIt = 1;
+            }
+        }
+        //If no newline character in userString, flush the buffer
+        //and add a newline character at the end of the userString
+        //end of array is [..., \n, \0]
+        if (!foundIt) {
             userString[SIZE - 2] = '\n';
+            FLUSH;
         }
         
         printf("Enter character to search for: ");
-        searchCh = getc(stdin);
+        searchCh = getchar();
         FLUSH;
         
         matches = CharIsAt(userString, searchCh, locations, MAXMATCHES);
@@ -85,6 +89,7 @@ int FMin(int x, int y) {
     return x < y ? x : y;
 }
 
+
 //HW #11, Noah Turnquist
 //Enter string to be searched. (Blank line to quit): hello
 //Enter character to search for: l
@@ -107,26 +112,26 @@ int FMin(int x, int y) {
 //Green
 //      
 //
-//Enter string to be searched. (Blank line to quit): aaaaaaaaaaaaaaaaaaaaa
+//Enter string to be searched. (Blank line to quit): aaaaaaaaaaaaaaaaaa
 //Enter character to search for: a
-//The character 'a' was found 21 times.
+//The character 'a' was found 18 times.
 //The first 10 matches are at:  0  1  2  3  4  5  6  7  8  9 in the string:
-//aaaaaaaaaaaaaaaaaaaaa
+//aaaaaaaaaaaaaaaaaa
 //^^^^^^^^^^
 //
-//Enter string to be searched. (Blank line to quit): adadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadad
+//Enter string to be searched. (Blank line to quit): adadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadad
 //Enter character to search for: d
 //The character 'd' was found 19 times.
 //The first 10 matches are at:  1  3  5  7  9 11 13 15 17 19 in the string:
 //adadadadadadadadadadadadadadadadadadada
 // ^ ^ ^ ^ ^ ^ ^ ^ ^ ^
 //
-//Enter string to be searched. (Blank line to quit): 123456678
+//Enter string to be searched. (Blank line to quit): 123456789
 //Enter character to search for: 6
-//The character '6' was found 2 times.
-//The first 2 matches are at:  5  6 in the string:
-//123456678
-//     ^^
+//The character '6' was found 1 times.
+//The first 1 matches are at:  5 in the string:
+//123456789
+//     ^
 //
 //Enter string to be searched. (Blank line to quit):
 //Program ended with exit code: 0
