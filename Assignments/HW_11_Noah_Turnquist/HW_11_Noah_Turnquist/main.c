@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define SIZE 6
+#define SIZE 41
 #define MAXMATCHES 10
 #define FLUSH while(getchar() != '\n')
 
