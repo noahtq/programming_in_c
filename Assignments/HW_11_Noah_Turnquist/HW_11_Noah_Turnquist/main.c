@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define SIZE 41
+#define SIZE 6
 #define MAXMATCHES 10
 #define FLUSH while(getchar() != '\n')
 
@@ -57,6 +57,7 @@ int main(void) {
         for (int i = 0; i < lenUserString; i++) {
             underline[i] = ' ';
         }
+        underline[lenUserString] = '\0';
         
         for (int i = 0; i < matchesToPrint; i++) {
             int matchIndex = locations[i];
@@ -99,11 +100,11 @@ int FMin(int x, int y) {
 //  ^^
 //
 //Enter string to be searched. (Blank line to quit): This is fun
-//Enter character to search for: h
-//The character 'h' was found 1 times.
-//The first 1 matches are at:  1 in the string:
+//Enter character to search for: i
+//The character 'i' was found 2 times.
+//The first 2 matches are at:  2  5 in the string:
 //This is fun
-// ^
+//  ^  ^
 //
 //Enter string to be searched. (Blank line to quit): Green
 //Enter character to search for: a
@@ -112,26 +113,26 @@ int FMin(int x, int y) {
 //Green
 //      
 //
-//Enter string to be searched. (Blank line to quit): aaaaaaaaaaaaaaaaaa
+//Enter string to be searched. (Blank line to quit): aaaaaaaaaaaaaaaaaaaa
 //Enter character to search for: a
-//The character 'a' was found 18 times.
+//The character 'a' was found 20 times.
 //The first 10 matches are at:  0  1  2  3  4  5  6  7  8  9 in the string:
-//aaaaaaaaaaaaaaaaaa
+//aaaaaaaaaaaaaaaaaaaa
 //^^^^^^^^^^
 //
-//Enter string to be searched. (Blank line to quit): adadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadad
+//Enter string to be searched. (Blank line to quit): adadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadad
 //Enter character to search for: d
 //The character 'd' was found 19 times.
 //The first 10 matches are at:  1  3  5  7  9 11 13 15 17 19 in the string:
 //adadadadadadadadadadadadadadadadadadada
 // ^ ^ ^ ^ ^ ^ ^ ^ ^ ^
 //
-//Enter string to be searched. (Blank line to quit): 123456789
+//Enter string to be searched. (Blank line to quit): 123456678
 //Enter character to search for: 6
-//The character '6' was found 1 times.
-//The first 1 matches are at:  5 in the string:
-//123456789
-//     ^
+//The character '6' was found 2 times.
+//The first 2 matches are at:  5  6 in the string:
+//123456678
+//     ^^
 //
 //Enter string to be searched. (Blank line to quit):
 //Program ended with exit code: 0
