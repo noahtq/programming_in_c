@@ -61,6 +61,11 @@ int main(void) {
 }
 
 STUDENT* CreateStudentArray(void) {
+    /*
+     Create an array on the heap of for STUDENTS of STUDENTARRSIZE size.
+     Error check and return a pointer to this array.
+     */
+    
     STUDENT* studentArray = (STUDENT*) malloc(STUDENTARRSIZE * sizeof(STUDENT));
     if (studentArray == NULL) {
         printf("Could not allocate student array on heap.\n");
@@ -70,6 +75,11 @@ STUDENT* CreateStudentArray(void) {
 }
 
 int ReadStudentsFromFile(STUDENT* studentArray, char* filePath) {
+    /*
+     Read in students contained in a file at filePath, save them
+     in the array pointed to by studentArray.
+     */
+    
     int studentsRead = 0;
     FILE* studentFile;
     
@@ -141,6 +151,13 @@ void PrintStudentInfo(STUDENT* studentArray, int studentsRead, int* highestQuizS
 }
 
 void GetAllScoreInfo(STUDENT* studentArray, int studentsRead, int* highestQuizScores, int* lowestQuizScores, int* averageQuizScores, int* highestExamScore, int* lowestExamScore, int* averageExamScore) {
+    /*
+     Get all of the quiz and exam info from the array of students
+     Save the quizes to a 2D array, save the exams to an array.
+     Find the highest, lowest, and average for each quiz and exam.
+     Return everything using pass by reference.
+     */
+    
     int allQuizScores[NUMOFQUIZZES][studentsRead];
     int allExamScores[studentsRead];
     
@@ -195,6 +212,12 @@ void GetAllScoreInfo(STUDENT* studentArray, int studentsRead, int* highestQuizSc
 }
 
 void PrintInfoHeaders(void) {
+    /*
+     Print the headers for the student information
+     Headers will update automatically depending on MAXNAMESIZE, NUMOFQUIZES,
+     and IDLENGTH.
+     */
+    
     printf("Set#     ");
     printf("Name");
     for (int i = 0; i < MAXNAMESIZE - 7; i++) {
@@ -225,19 +248,12 @@ void PrintInfoHeaders(void) {
     printf("------\n");
 }
 
-void PrintInfoSubheader(void) {
-    int totalStrSize = 13 + MAXNAMESIZE + IDLENGTH + 7 * NUMOFQUIZZES;
-    for (int i = 0; i < (int) ((totalStrSize - 12) / 2); i++) {
-        putchar('=');
-    }
-    printf(" STATISTICS ");
-    for (int i = 0; i < (int) ((totalStrSize - 11) / 2); i++) {
-        putchar('=');
-    }
-    putchar('\n');
-}
-
 void PrintTitle(char* title) {
+    /*
+     Print a title in the format: ==== title ====
+     Title length varies by the MAXNAMESIZE, IDLENGTH, NUMOFQUIZZES
+     */
+    
     int totalStrSize = 13 + MAXNAMESIZE + IDLENGTH + 7 * NUMOFQUIZZES;
     int titleLen = (int) strlen(title);
     
@@ -252,6 +268,11 @@ void PrintTitle(char* title) {
 }
 
 void PrintStatisticsLine(char* label, int* quizArr, int examScore) {
+    /*
+    Print label, the given value for each quiz, and the examScore value
+    Formatted to match rest of output.
+     */
+    
     char outputStr[MAXOUTPUTSTRSIZE];
     int minWidth = 3 + MAXNAMESIZE + IDLENGTH;
     sprintf(outputStr, "    %%-%ds", minWidth);
