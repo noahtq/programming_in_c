@@ -2,6 +2,7 @@
 
 //TODO: Add documentation for all functions
 //TODO: Ask Professor about append option. It is in his sample output but not in the program description.
+//TODO: Consider changing to pointer notation arrays for increased efficiency.
 
 #include <stdio.h>
 #include <time.h>
@@ -12,6 +13,7 @@
 #define FILEPATH "/Users/noahturnquist/Documents/College/Spring_2024/Programming_in_C/Assignments/HW_13/"
 #define MAXFILENAMESIZE 20
 #define FILEEXTENSION ".xxx"
+#define NUMVLAS 2
 #define FLUSH while(getchar() != '\n')
 
 typedef struct {
@@ -25,21 +27,38 @@ enum FILEOPTIONS { OVERWRITE = 1, RENAME, ABORT };
 
 int GetNumPoints(void);
 double GetRandDouble(void);
-FILE* OpenWrBinaryFile(char* fullFileName, int fullFilePathSize);
+FILE* OpenWrBinaryFile(char* fullFileName, int fullFilePathSize, char* fileName);
 void GetFileNameFromUser(char* fileName);
 void AppendFileNameToFilePath(const char* fileName, const char* filepath, char* fullPath, int stringLength);
 int CheckFileExists(const char* filepath);
 int GetUserFileOption(const char* fileName);
+int CreateVLAStructsOnHeap(DATA* dataArr[]); //TODO: Consider switching to pointer notation for array of pointers parameter.
+int WriteVLASStructsToFile(FILE* fPtr, DATA* dataArr[]); //TODO: Consider switching to pointer notation for array of pointers parameter.
+void PrintDataInfo(DATA* dataArr[], char* fileName);
+void DeallocateMemoryFromHeap(DATA* dataArr[]);
 
 int main(int argc, const char * argv[]) {
     srand((unsigned)time(NULL));
     
     FILE* fPt;
     int fileLength = strlen(FILEPATH) + MAXFILENAMESIZE;
+    char fileName[MAXFILENAMESIZE + 1];
     char fullFilePath[fileLength + 1];
+    DATA* dataArr[NUMVLAS];
     
-    if ((fPt = OpenWrBinaryFile(fullFilePath, fileLength)) != NULL) {
+    if (CreateVLAStructsOnHeap(dataArr) != NUMVLAS) {
+        printf("Something went wrong while creating VLA Structs on the heap.\n");
+        return 1;
+    }
+    
+    if ((fPt = OpenWrBinaryFile(fullFilePath, fileLength, fileName)) != NULL) {
+        if (WriteVLASStructsToFile(fPt, dataArr) != NUMVLAS) {
+            printf("Something went wrong writing VLA Structs to file.\n");
+            return 1;
+        }
         printf("%s\n", fullFilePath);
+        PrintDataInfo(dataArr, fileName);
+        DeallocateMemoryFromHeap(dataArr);
     }
     
     fclose(fPt);
@@ -55,8 +74,7 @@ double GetRandDouble(void) {
     return 20.0 * rand() / RAND_MAX;
 }
 
-FILE* OpenWrBinaryFile(char* fullFileName, int fullFilePathSize) {
-    char fileName[MAXFILENAMESIZE + 1];
+FILE* OpenWrBinaryFile(char* fullFileName, int fullFilePathSize, char* fileName) {
     int fileOption = -1;
     int fileExists;
     FILE* fPt;
@@ -131,6 +149,61 @@ int GetUserFileOption(const char* fileName) {
     } while (validEntry == 0);
     
     return fileOption;
+}
+
+int CreateVLAStructsOnHeap(DATA* dataArr[]) {
+    int structsMade = 0;
+    
+    for (int i = 0; i < NUMVLAS; i++) {
+        int numPts = GetNumPoints();
+        DATA* dataPtr = malloc(sizeof(DATA) + sizeof(double) * numPts);
+        if (dataPtr == NULL) {
+            dataArr[i] = NULL;
+            printf("Couldn't allocate memory on heap for DATA struct.\n");
+        } else {
+            dataPtr->datasetNum = i + 1;
+            dataPtr->nPts = numPts;
+            double sum = 0.0;
+            for (int j = 0; j < numPts; j++) {
+                double tempDouble = GetRandDouble();
+                sum += tempDouble;
+                dataPtr->points[j] = tempDouble;
+            }
+            dataPtr->average = sum / numPts;
+            dataArr[i] = dataPtr;
+            structsMade++;
+        }
+    }
+    return structsMade;
+}
+
+int WriteVLASStructsToFile(FILE* fPtr, DATA* dataArr[]) {
+    int structsWritten = 0;
+    
+    for (int i = 0; i < NUMVLAS; i++) {
+        int structSize = sizeof(DATA) + (dataArr[i])->nPts * sizeof(double);
+        //Add size of structure in bytes before each struct in file
+        fwrite(&structSize, sizeof(int), 1, fPtr); //TODO: Maybe remove this? Add error checking if I keep it.
+        if (fwrite(dataArr[i], structSize, 1, fPtr)) {
+            structsWritten++;
+        }
+    }
+    
+    return structsWritten;
+}
+
+void PrintDataInfo(DATA* dataArr[], char* fileName) {
+    for (int i = 0; i < NUMVLAS; i++) {
+        printf("Wrote dataSet #%d to %s: %5d\n", (dataArr[i])->datasetNum, fileName, (int) (sizeof(DATA) + sizeof(double) * (dataArr[i])->nPts));
+        printf("The set contains %5d points, the average is %4.4lf\n", (dataArr[i])->nPts, (dataArr[i])->average);
+    }
+}
+
+void DeallocateMemoryFromHeap(DATA* dataArr[]) {
+    for (int i = 0; i < NUMVLAS; i++) {
+        free(dataArr[i]);
+        dataArr[i] = NULL;
+    }
 }
 
 

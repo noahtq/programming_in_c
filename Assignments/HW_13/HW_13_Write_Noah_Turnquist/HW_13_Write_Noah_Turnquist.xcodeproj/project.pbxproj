@@ -25,6 +25,7 @@
 /* Begin PBXFileReference section */
 		F0490CA82BC88010002630FD /* HW_13_Write_Noah_Turnquist */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = HW_13_Write_Noah_Turnquist; sourceTree = BUILT_PRODUCTS_DIR; };
 		F0490CAB2BC88010002630FD /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		F08B45422BC9D7F800909288 /* HW13Data.xxx */ = {isa = PBXFileReference; lastKnownFileType = file; name = HW13Data.xxx; path = ../../HW13Data.xxx; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +58,7 @@
 		F0490CAA2BC88010002630FD /* HW_13_Write_Noah_Turnquist */ = {
 			isa = PBXGroup;
 			children = (
+				F08B45422BC9D7F800909288 /* HW13Data.xxx */,
 				F0490CAB2BC88010002630FD /* main.c */,
 			);
 			path = HW_13_Write_Noah_Turnquist;
