@@ -21,7 +21,7 @@ typedef struct {
     double points[];
 } DATA;
 
-enum FILEOPTIONS { APPEND = 1, OVERWRITE, RENAME, ABORT };
+enum FILEOPTIONS { OVERWRITE = 1, RENAME, ABORT };
 
 int GetNumPoints(void);
 double GetRandDouble(void);
@@ -38,8 +38,9 @@ int main(int argc, const char * argv[]) {
     int fileLength = strlen(FILEPATH) + MAXFILENAMESIZE;
     char fullFilePath[fileLength + 1];
     
-    fPt = OpenWrBinaryFile(fullFilePath, fileLength);
-    printf("%s\n", fullFilePath);
+    if ((fPt = OpenWrBinaryFile(fullFilePath, fileLength)) != NULL) {
+        printf("%s\n", fullFilePath);
+    }
     
     fclose(fPt);
     
@@ -66,7 +67,7 @@ FILE* OpenWrBinaryFile(char* fullFileName, int fullFilePathSize) {
         if ((fileExists = CheckFileExists(fullFileName)) == 1) {
             fileOption = GetUserFileOption(fileName);
         }
-    } while(fileExists || fileOption == RENAME);
+    } while(fileExists && fileOption == RENAME);
     
     if (fileExists == 0 || fileOption == OVERWRITE) {
         fPt = fopen(fullFileName, "wb");
@@ -113,13 +114,12 @@ int GetUserFileOption(const char* fileName) {
     
     do {
         printf("File %s exists. Do you want to:\n", fileName);
-        printf("\tAppend to the file (%d),\n", APPEND);
         printf("\tOverwrite the file (%d),\n", OVERWRITE);
         printf("\tChange the filename (%d),\n", RENAME);
         printf("\tOr abort (%d)\n", ABORT);
         printf("Enter a number: ");
         if (scanf(" %d", &fileOption) == 1) {
-            if (fileOption >= APPEND && fileOption <= ABORT) {
+            if (fileOption >= OVERWRITE && fileOption <= ABORT) {
                 validEntry = 1;
             } else {
                 printf("Please enter a valid number from the list of options.\n");
@@ -132,3 +132,51 @@ int GetUserFileOption(const char* fileName) {
     
     return fileOption;
 }
+
+
+/*
+ TEST PLAN
+ 
+ CHECK OPENWRBINARYFILE()
+ 1. Enter filename that does not exist: HW20Data
+ -Should exit function immediately with pointer to opened file
+ 
+ 2. Enter filename that does exist: HW13Data
+    In next prompt choose option 1: Overwrite
+ -Should exit function immediately with pointer to opened file, HW13Data
+ 
+ 3. Enter filename that does exist: HW13Data
+    In next prompt choose option 2: Rename
+    Enter a new filename when prompted: HW21Data
+ -Should restart loop and ask user to enter filename
+ -Once new filename is entered...
+ -Should exit function immediately with pointer to opened file
+ 
+ 4. Enter filename that does exist: HW13Data
+    In next prompt choose option 3: Abort
+ -Should exit function immediately with a NULL pointer
+ 
+ 5. Enter a filename that is too long: HW13DataHW13DataHW13Data
+ -Should cut off any chars beyond char 20 and continue program execution as normal
+ 
+ 6. Enter filename that does exist: HW13Data
+    In next prompt enter non digit: abc
+ -Should print "Please enter a number"
+ -Prompt is repeated until valid number is entered
+ 
+ 7. Enter filename that does exist: HW13Data
+    In next prompt enter too low digit: 0
+ -Should print "Please enter a valid number from the list of options."
+ -Prompt is repeated until valid number is entered
+ 
+ 8. Enter filename that does exist: HW13Data
+    In next prompt enter too high digit: 9
+ -Should print "Please enter a valid number from the list of options."
+ -Prompt is repeated until valid number is entered
+ 
+ 9. (Testing buffer is flushed)
+    Enter filename that does exist: HW13Data
+    In next prompt enter invalid digit with valid digit: 9 2
+ -Should print "Please enter a valid number from the list of options."
+ -Prompt is repeated until valid number is entered
+ */
