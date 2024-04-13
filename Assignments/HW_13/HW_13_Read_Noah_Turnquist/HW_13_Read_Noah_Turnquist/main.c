@@ -2,6 +2,7 @@
 
 //TODO: Add default functionality
 //TODO: Add documentation to functions
+//TODO: Add test cases
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -141,3 +142,9 @@ void PrintOutput(DATA* dataPtr, char* fileName, int averagesMatch, double calcul
         printf("The averages don't match.\n");
     }
 }
+
+/*
+ TEST PLAN
+ 
+ TEST OPENREADBINARYFILE()
+ */

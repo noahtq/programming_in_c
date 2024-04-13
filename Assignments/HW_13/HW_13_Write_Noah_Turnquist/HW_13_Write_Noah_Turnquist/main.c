@@ -1,12 +1,7 @@
 //HW #13, Noah Turnquist - Write
 
 //TODO: Add documentation for all functions
-//TODO: Ask Professor about append option. It is in his sample output but not in the program description.
-//TODO: Consider changing to pointer notation arrays for increased efficiency.
-//TODO: Format output better
-//TODO: Add test cases
-//TODO: Add sample output at bottom of script
-//TODO: Add default name for file, see sample output
+//TODO: Update sample output
 
 #include <stdio.h>
 #include <time.h>
@@ -14,6 +9,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#define DEFAULTFILENAME "default"
 #define FILEPATH "/Users/noahturnquist/Documents/College/Spring_2024/Programming_in_C/Assignments/HW_13/"
 #define MAXFILENAMESIZE 20
 #define FILEEXTENSION ".xxx"
@@ -45,7 +41,7 @@ int main(int argc, const char * argv[]) {
     srand((unsigned)time(NULL));
     
     FILE* fPt;
-    int fileLength = strlen(FILEPATH) + MAXFILENAMESIZE;
+    int fileLength = strlen(FILEPATH) + MAXFILENAMESIZE + strlen(FILEEXTENSION);
     char fileName[MAXFILENAMESIZE + 1];
     char fullFilePath[fileLength + 1];
     DATA* dataArr[NUMVLAS];
@@ -63,6 +59,7 @@ int main(int argc, const char * argv[]) {
             return 1;
         }
         printf("%s\n", fullFilePath);
+        putchar('\n');
         PrintDataInfo(dataArr, fileName);
         DeallocateMemoryFromHeap(dataArr);
     }
@@ -102,20 +99,31 @@ FILE* OpenWrBinaryFile(char* fullFileName, int fullFilePathSize, char* fileName)
 }
 
 void GetFileNameFromUser(char* fileName) {
+    printf("The default file name is: %s\n", DEFAULTFILENAME);
     printf("Enter a file name up to %d chars: ", MAXFILENAMESIZE);
-    scanf("%20s", fileName); //TODO: Get rid of magic constant in this scanf
-    if (!strchr(fileName, '\n')) {
+    fgets(fileName, MAXFILENAMESIZE, stdin);
+    if (fileName[0] == '\n') {
+        strncpy(fileName, DEFAULTFILENAME, MAXFILENAMESIZE);
+    }
+    else if (!strchr(fileName, '\n')) {
         FLUSH;
+    } else {
+        *strchr(fileName, '\n') = '\0';
     }
 }
 
 void AppendFileNameToFilePath(const char* fileName, const char* filepath, char* fullPath, int stringLength) {
+    //Copy the file path. After copy subtract the characters written from
+    //stringLength
     strncpy(fullPath, filepath, stringLength);
     stringLength -= strlen(filepath);
     
+    //Concatenate file name to fullPath. After Concatination subtract the length
+    //of fileName from stringLength.
     strncat(fullPath, fileName, stringLength);
     stringLength -= strlen(fileName);
     
+    //Add the file extension.
     strncat(fullPath, FILEEXTENSION, stringLength);
 }
 
@@ -202,6 +210,7 @@ void PrintDataInfo(DATA* dataArr[], char* fileName) {
     for (int i = 0; i < NUMVLAS; i++) {
         printf("Wrote dataSet #%d to %s: %5d bytes\n", (dataArr[i])->datasetNum, fileName, (int) (sizeof(DATA) + sizeof(double) * (dataArr[i])->nPts));
         printf("The set contains %5d points, the average is %4.4lf\n", (dataArr[i])->nPts, (dataArr[i])->average);
+        putchar('\n');
     }
 }
 
@@ -213,10 +222,28 @@ void DeallocateMemoryFromHeap(DATA* dataArr[]) {
 }
 
 
+//HW #13 Part 1: Noah Turnquist
+//Enter a file name up to 20 chars: HW13Data
+//File HW13Data exists. Do you want to:
+//    Overwrite the file (1),
+//    Change the filename (2),
+//    Or abort (3)
+//Enter a number: 1
+//
+//Wrote dataSet #1 to HW13Data:  3216 bytes
+//The set contains   400 points, the average is 10.4018
+//
+//Wrote dataSet #2 to HW13Data:  8016 bytes
+//The set contains  1000 points, the average is 9.9373
+//
+//Program ended with exit code: 0
+
+
 /*
  TEST PLAN
  
  CHECK OPENWRBINARYFILE()
+ 
  1. Enter filename that does not exist: HW20Data
  -Should exit function immediately with pointer to opened file
  
@@ -258,4 +285,17 @@ void DeallocateMemoryFromHeap(DATA* dataArr[]) {
     In next prompt enter invalid digit with valid digit: 9 2
  -Should print "Please enter a valid number from the list of options."
  -Prompt is repeated until valid number is entered
+ 
+ 10. Check default filename: Hit enter with no input
+ -Should open a file named default if default hasn't already been created
+ -Should prompt for file option if default already exists
+ 
+ 
+ CHECK REST OF PROGRAM
+ 
+ 1. Should have two datasets created at expected file location: HW13Data
+ 2. Each dataset should have two different sizes in bytes, somewhere between 1,000 to 10,000
+ 3. Each dataset should output somewhere between 200 and 1000 points
+ 4. Average should be somewhere around 10.0 as the min double value is 0 and the max is 20
+ 5. Add breakpoint just before return in main to ensure that files are closed and memory is deallocated
  */
