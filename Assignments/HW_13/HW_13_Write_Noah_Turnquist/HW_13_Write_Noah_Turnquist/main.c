@@ -1,8 +1,12 @@
-//HW #13, Noah Turnquist
+//HW #13, Noah Turnquist - Write
 
 //TODO: Add documentation for all functions
 //TODO: Ask Professor about append option. It is in his sample output but not in the program description.
 //TODO: Consider changing to pointer notation arrays for increased efficiency.
+//TODO: Format output better
+//TODO: Add test cases
+//TODO: Add sample output at bottom of script
+//TODO: Add default name for file, see sample output
 
 #include <stdio.h>
 #include <time.h>
@@ -45,6 +49,8 @@ int main(int argc, const char * argv[]) {
     char fileName[MAXFILENAMESIZE + 1];
     char fullFilePath[fileLength + 1];
     DATA* dataArr[NUMVLAS];
+    
+    printf("HW #13 Part 1: Noah Turnquist\n");
     
     if (CreateVLAStructsOnHeap(dataArr) != NUMVLAS) {
         printf("Something went wrong while creating VLA Structs on the heap.\n");
@@ -156,7 +162,7 @@ int CreateVLAStructsOnHeap(DATA* dataArr[]) {
     
     for (int i = 0; i < NUMVLAS; i++) {
         int numPts = GetNumPoints();
-        DATA* dataPtr = malloc(sizeof(DATA) + sizeof(double) * numPts);
+        DATA* dataPtr = (DATA*) malloc(sizeof(DATA) + sizeof(double) * numPts);
         if (dataPtr == NULL) {
             dataArr[i] = NULL;
             printf("Couldn't allocate memory on heap for DATA struct.\n");
@@ -194,7 +200,7 @@ int WriteVLASStructsToFile(FILE* fPtr, DATA* dataArr[]) {
 
 void PrintDataInfo(DATA* dataArr[], char* fileName) {
     for (int i = 0; i < NUMVLAS; i++) {
-        printf("Wrote dataSet #%d to %s: %5d\n", (dataArr[i])->datasetNum, fileName, (int) (sizeof(DATA) + sizeof(double) * (dataArr[i])->nPts));
+        printf("Wrote dataSet #%d to %s: %5d bytes\n", (dataArr[i])->datasetNum, fileName, (int) (sizeof(DATA) + sizeof(double) * (dataArr[i])->nPts));
         printf("The set contains %5d points, the average is %4.4lf\n", (dataArr[i])->nPts, (dataArr[i])->average);
     }
 }
