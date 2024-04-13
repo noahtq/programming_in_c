@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		F08B45642BCAB48200909288 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = F08B45632BCAB48200909288 /* main.c */; };
+		F08B456D2BCAB5BE00909288 /* hw_13_write.c in Sources */ = {isa = PBXBuildFile; fileRef = F08B456C2BCAB5BE00909288 /* hw_13_write.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +26,8 @@
 /* Begin PBXFileReference section */
 		F08B45602BCAB48200909288 /* HW_13_Tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = HW_13_Tests; sourceTree = BUILT_PRODUCTS_DIR; };
 		F08B45632BCAB48200909288 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		F08B456B2BCAB5BE00909288 /* hw_13_write.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hw_13_write.h; sourceTree = "<group>"; };
+		F08B456C2BCAB5BE00909288 /* hw_13_write.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hw_13_write.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +61,8 @@
 			isa = PBXGroup;
 			children = (
 				F08B45632BCAB48200909288 /* main.c */,
+				F08B456B2BCAB5BE00909288 /* hw_13_write.h */,
+				F08B456C2BCAB5BE00909288 /* hw_13_write.c */,
 			);
 			path = HW_13_Tests;
 			sourceTree = "<group>";
@@ -119,6 +124,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F08B456D2BCAB5BE00909288 /* hw_13_write.c in Sources */,
 				F08B45642BCAB48200909288 /* main.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
