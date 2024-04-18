@@ -1,6 +1,7 @@
 //HW #14, Noah Turnquist
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -8,6 +9,8 @@
 #define MAXTITLE 50
 #define MAXAUTHOR 50
 #define MAXYEAR 4
+#define DEFAULTFILEPATH "/Users/noahturnquist/Documents/College/Spring_2024/Programming_in_C/Assignments/HW_14_Noah_Turnquist/HW_14_Noah_Turnquist/"
+#define INPUTFILENAME "HW14DataMac.txt"
 
 typedef struct {
     int bookId;
@@ -29,6 +32,14 @@ typedef struct {
 enum MENUOPTIONS { INITORDELETELIST = 1, APPEND, WRITETOBINARY, PRINTBOOK, EXIT };
 
 int GetMenuOptionFromUser(HEADER list);
+HEADER InitializeOrDeleteLinkedList(HEADER list);
+HEADER DeleteLinkedList(HEADER list);
+HEADER AppendLinkedList(char* fileName, HEADER list);
+FILE* OpenFileInReadMode(char* fileName);
+void AppendFileNameToFilePath(const char* fileName, const char* filepath, char* fullPath, int stringLength);
+BOOK GetBookFromFile(FILE* fp, int bookId);
+int FileToStringWithoutNewline(FILE* fp, char* str, int maxChars);
+void DestroyNewlinesAndCarriageReturns(FILE* fp);
 
 int main(void) {
     int userChoice;
@@ -38,7 +49,15 @@ int main(void) {
     
     do {
         userChoice = GetMenuOptionFromUser(list);
-        printf("%d\n", userChoice);
+        switch (userChoice) {
+            case INITORDELETELIST:
+                list = InitializeOrDeleteLinkedList(list);
+                break;
+            case EXIT:
+                printf("Exiting program.\n");
+                break;
+        }
+        
     } while(userChoice != EXIT);
     
     return 0;
@@ -77,6 +96,171 @@ int GetMenuOptionFromUser(HEADER list) {
     } while(!validSelection);
     
     return userChoice;
+}
+
+HEADER InitializeOrDeleteLinkedList(HEADER list) {
+    HEADER newHeader;
+    
+    if (list.pHead == NULL) {
+        newHeader = AppendLinkedList(INPUTFILENAME, list);
+        printf("Initialized list.\n");
+    } else {
+        newHeader = DeleteLinkedList(list);
+    }
+    
+    return newHeader;
+}
+
+HEADER DeleteLinkedList(HEADER list) {
+    NODE* pCur = list.pHead;
+    NODE* pNext;
+    
+    while(pCur != NULL) {
+        pNext = pCur->link;
+        free(pCur);
+        pCur = pNext;
+    }
+    
+    HEADER newHeader = { NULL, 0 };
+    return newHeader;
+}
+
+HEADER AppendLinkedList(char* fileName, HEADER list) {
+    FILE* fp;
+    HEADER newHeader;
+    BOOK tempBook;
+    int bookId = list.numBooks;
+    NODE* pHead = list.pHead;
+    NODE* pPrev;
+    NODE* pCur;
+    
+    if ((fp = OpenFileInReadMode(fileName)) == NULL) {
+        printf("Error. Couldn't open file.\n");
+        newHeader.pHead = NULL;
+        newHeader.numBooks = 0;
+    } else {
+        while (!feof(fp)) {
+            tempBook = GetBookFromFile(fp, bookId);
+            if (tempBook.bookId == -1) {
+                printf("Error reading book.\n");
+            } else {
+                pCur = (NODE*) malloc(sizeof(NODE));
+                if (pCur) {
+                    pCur->data = tempBook;
+                    pCur->link = NULL;
+                    if (pHead == NULL) {
+                        pHead = pCur;
+                    } else {
+                        pPrev->link = pCur;
+                    }
+                    pPrev = pCur;
+                    bookId++;
+                } else {
+                    printf("Error couldn't allocate memory for node.\n"); //TODO: Make sure not exiting function here is okay.
+                }
+            }
+            
+            //Don't try to keep reading if there's extra newlines at the end of a line or the file
+            DestroyNewlinesAndCarriageReturns(fp);
+        }
+        
+        newHeader.pHead = pHead;
+        newHeader.numBooks = bookId;
+    }
+    
+    return newHeader;
+}
+
+FILE* OpenFileInReadMode(char* fileName) {
+    FILE* fp;
+    int stringLength = (int) strlen(DEFAULTFILEPATH) + (int) strlen(fileName);
+    char fullFilePath[stringLength + 1];
+    
+    AppendFileNameToFilePath(fileName, DEFAULTFILEPATH, fullFilePath, stringLength);
+    
+    if ((fp = fopen(fullFilePath, "r")) == NULL) {
+        printf("Couldn't open file at %s\n", fullFilePath);
+    }
+    
+    return fp;
+}
+
+void AppendFileNameToFilePath(const char* fileName, const char* filepath, char* fullPath, int stringLength) {
+    /*
+     Add together a filename, filepath, and extension.
+     Ensure that total filepath size does not exceed stringLength
+     */
+    
+    //Copy the file path. After copy subtract the characters written from
+    //stringLength
+    strncpy(fullPath, filepath, stringLength);
+    stringLength -= strlen(filepath);
+    
+    //Concatenate file name to fullPath. After Concatination subtract the length
+    //of fileName from stringLength.
+    strncat(fullPath, fileName, stringLength);
+    stringLength -= strlen(fileName);
+}
+
+BOOK GetBookFromFile(FILE* fp, int bookId) {
+    BOOK tempBook;
+    char title[MAXTITLE + 1];
+    char author[MAXAUTHOR + 1];
+    char published[MAXYEAR + 1];
+    
+    tempBook.bookId = -1;
+    if (!FileToStringWithoutNewline(fp, title, MAXTITLE)) {
+        printf("Error: couldn't read title.\n");
+        return tempBook;
+    }
+    if (!FileToStringWithoutNewline(fp, author, MAXAUTHOR)) {
+        printf("Error: couldn't read author.\n");
+        return tempBook;
+    }
+    if (!FileToStringWithoutNewline(fp, published, MAXYEAR)) {
+        printf("Error: couldn't read year published.\n");
+        return tempBook;
+    }
+    
+    tempBook.bookId = bookId;
+    strncpy(tempBook.title, title, MAXTITLE);
+    strncpy(tempBook.author, author, MAXAUTHOR);
+    strncpy(tempBook.published, published, MAXYEAR);
+    
+    return tempBook;
+}
+
+int FileToStringWithoutNewline(FILE* fp, char* str, int maxChars) {
+    char* newline;
+    char* carriageReturn;
+    
+    DestroyNewlinesAndCarriageReturns(fp);
+    
+    if (fgets(str, maxChars + 1, fp)) {
+        
+        //Remove all newlines and carriage returns from string
+        while ((newline = strchr(str, '\n')) != NULL) {
+            *newline = '\0';
+        }
+        
+        while ((carriageReturn = strchr(str, '\r')) != NULL) {
+            *carriageReturn = '\0';
+        }
+        
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+void DestroyNewlinesAndCarriageReturns(FILE* fp) {
+    // When reading files from different operating systems,
+    // we might have extra newlines '\n' or carriage returns '\r'.
+    // This code discards those to make sure we can read everything as expected.
+    
+    char ch;
+    while((ch = getc(fp)) == '\n' || ch == '\r');
+    ungetc(ch, fp);
 }
 
 
@@ -139,6 +323,35 @@ int GetMenuOptionFromUser(HEADER list) {
  
  
  
- TEST -
+ TEST - InitializeOrDeleteLinkedList()
+ 
+ --- Test AppendLinkedList() ---
+ 
+ 1. //TODO: Add tests here
+ 
+ *** Test OpenFileInReadMode() ***
+ 1. Use bad filepath or filename.
+ - Should print error message, and then go back to menu without initializing list.
+ 
+ 2. Use valid filename and filepath. Add breakpoint to check file pointer, fp, was opened correctly.
+ - fp should be pointing to expected file.
+ 
+ *** Test GetBookFromFile() ***
+ 1. Add breakpoint after GetBookFromFile() call.
+ - Check that the tempBook object was created correctly and all of the member variables are as expected.
+ 
+ 2. Add breakpoint after GetBookFromFile() call.
+    Add a newline with some gibberish to the end of the read file.
+ - Should read all of the books correctly. Once you reach the line with gibberish, should give error about not being able to read book, and then go back to menu.
+ 
+ 
+ --- Test DeleteLinkedList() ---
+ 1. Run program. Hit 1 to initialize the list.
+    Hit 1 the second time the menu pops up to delete the list.
+ - Add breakpoint in menu and make sure that HEADER has pHead = NULL and numBooks = 0, meaning the list was deleted.
+ 
+ 1. Run program. Hit 2 to append more data to list.
+    Hit 1 the next time the menu pops up to delete the list.
+ - Add breakpoint in menu and make sure that HEADER has pHead = NULL and numBooks = 0, meaning the list was deleted.
  
  */
