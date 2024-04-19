@@ -31,6 +31,7 @@ typedef struct {
     NODE* pHead;
     NODE* pLast;
     int numBooks;
+    int listInitialized;
 } HEADER;
 
 enum MENUOPTIONS { INITORDELETELIST = 1, APPEND, WRITETOBINARY, PRINTBOOK, EXIT };
@@ -56,7 +57,7 @@ int GetUserFileOption(const char* fileName);
 
 int main(void) {
     int userChoice;
-    HEADER list = { NULL, 0 };
+    HEADER list = { NULL, NULL, 0, 0 };
     
     printf("HW #14, Noah Turnquist\n");
     
@@ -87,30 +88,41 @@ int main(void) {
 }
 
 int GetMenuOptionFromUser(HEADER list) {
+    /*
+     Prompt user to select a menu option.
+     Only show valid menu options and check to make sure
+     users enters a valid option.
+     Return the users selection.
+     */
+    
     int validSelection = 0;
     char chUserChoice;
     int userChoice = -1;
     
     do {
         printf("Please select one of the options by entering the cooresponding number.\n");
-        if (list.pHead == NULL) {
+        if (list.listInitialized == 0) {
             printf("Initialize the list: (%d)\n", INITORDELETELIST);
         } else {
             printf("Delete the list: (%d)\n", INITORDELETELIST);
             printf("Append data from file to the list: (%d)\n", APPEND);
-            printf("Write the list out to a binary file: (%d)\n", WRITETOBINARY);
-            printf("Get info on a book: (%d)\n", PRINTBOOK);
+            if (list.pHead) {
+                printf("Write the list out to a binary file: (%d)\n", WRITETOBINARY);
+                printf("Get info on a book: (%d)\n", PRINTBOOK);
+            }
         }
         printf("Exit the program: (%d)\n", EXIT);
         chUserChoice = getchar();
         if (isdigit(chUserChoice)) {
             userChoice = chUserChoice - '0';
-            if (list.pHead == NULL && (userChoice == INITORDELETELIST || userChoice == EXIT)) {
+            if (list.listInitialized == 0 && (userChoice == INITORDELETELIST || userChoice == EXIT)) {
                 validSelection = 1;
-            } else if (list.pHead && (userChoice >= INITORDELETELIST && userChoice <= EXIT)) {
+            } else if (list.listInitialized == 1 && list.pHead == NULL && (userChoice == INITORDELETELIST || userChoice == APPEND || userChoice == EXIT)) {
+                validSelection = 1;
+            } else if (list.pHead && list.listInitialized && (userChoice >= INITORDELETELIST && userChoice <= EXIT)) {
                 validSelection = 1;
             } else {
-                printf("Please pick from one of the menu option.\n");
+                printf("Please pick from one of the menu options.\n");
             }
         } else {
             printf("Please enter a number.\n");
@@ -122,20 +134,31 @@ int GetMenuOptionFromUser(HEADER list) {
 }
 
 HEADER InitializeOrDeleteLinkedList(HEADER list) {
-    HEADER newHeader;
+    /*
+     If linked list is uninitialzied, initialize it
+     otherwise delete all of the list elements and set
+     pointers to NULL
+     */
     
-    if (list.pHead == NULL) {
-        newHeader = AppendLinkedList(INPUTFILENAME, list);
-        printf("Initialized list.\n");
+    HEADER newHeader = { NULL, NULL, 0, 0 };
+    
+    if (!list.listInitialized) {
+        newHeader.listInitialized = 1;
+        printf("Initialized list. Ready for appending.\n\n");
     } else {
         newHeader = DeleteLinkedList(list);
-        printf("Deleted list.\n");
+        printf("Deleted list.\n\n");
     }
     
     return newHeader;
 }
 
 HEADER DeleteLinkedList(HEADER list) {
+    /*
+     Go through linked list and deallocate memory
+     for nodes. Set HEADER pointers to null.
+     */
+    
     NODE* pCur = list.pHead;
     NODE* pNext;
     
@@ -145,11 +168,16 @@ HEADER DeleteLinkedList(HEADER list) {
         pCur = pNext;
     }
     
-    HEADER newHeader = { NULL, NULL, 0 };
+    HEADER newHeader = { NULL, NULL, 0, 0 };
     return newHeader;
 }
 
 HEADER AppendLinkedList(char* fileName, HEADER list) {
+    /*
+     Grab all books in format (Title, Author, Year Published)
+     from file at fileName. Append to the end of the linked list "list".
+     */
+    
     FILE* fp;
     HEADER newHeader;
     BOOK tempBook;
@@ -192,7 +220,9 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
         newHeader.pHead = pHead;
         newHeader.numBooks = bookId;
         newHeader.pLast = pPrev;
+        newHeader.listInitialized = list.listInitialized;
     }
+    printf("Appended %d books to linked list.\n\n", newHeader.numBooks - list.numBooks);
     
     fclose(fp);
     
@@ -200,6 +230,11 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
 }
 
 FILE* OpenFileInReadMode(char* fileName) {
+    /*
+     Open the file in DEFAULTFILEPATH with the name fileName in read mode.
+     Return a pointer to the file.
+     */
+    
     FILE* fp;
     int stringLength = (int) strlen(DEFAULTFILEPATH) + (int) strlen(fileName);
     char fullFilePath[stringLength + 1];
@@ -215,7 +250,7 @@ FILE* OpenFileInReadMode(char* fileName) {
 
 void AppendFileNameToFilePath(const char* fileName, const char* filepath, char* fullPath, int stringLength) {
     /*
-     Add together a filename, filepath, and extension.
+     Add together a filename and filepath.
      Ensure that total filepath size does not exceed stringLength
      */
     
@@ -231,6 +266,11 @@ void AppendFileNameToFilePath(const char* fileName, const char* filepath, char* 
 }
 
 BOOK GetBookFromFile(FILE* fp, int bookId) {
+    /*
+     Create a book object from the info in the file fp.
+     Check for errors and return the book object.
+     */
+    
     BOOK tempBook = { -1, "", "", "" };
     char title[MAXTITLE + 1];
     char author[MAXAUTHOR + 1];
@@ -258,6 +298,12 @@ BOOK GetBookFromFile(FILE* fp, int bookId) {
 }
 
 int FileToStringWithoutNewline(FILE* fp, char* str, int maxChars) {
+    /*
+     Read in a line characters from the text file fp,
+     store the input in str.
+     Return 1 if successful and 0 if unsuccessful.
+     */
+    
     char* newline;
     char* carriageReturn;
     
@@ -288,9 +334,11 @@ int FileToStringWithoutNewline(FILE* fp, char* str, int maxChars) {
 }
 
 void DestroyNewlinesAndCarriageReturns(FILE* fp) {
-    // When reading files from different operating systems,
-    // we might have extra newlines '\n' or carriage returns '\r'.
-    // This code discards those to make sure we can read everything as expected.
+    /* 
+     When reading files from different operating systems,
+     we might have extra newlines '\n' or carriage returns '\r'.
+     This code discards those to make sure we can read everything as expected.
+     */
     
     char ch;
     while((ch = getc(fp)) == '\n' || ch == '\r');
@@ -298,6 +346,12 @@ void DestroyNewlinesAndCarriageReturns(FILE* fp) {
 }
 
 void PrintBookById(HEADER list) {
+    /*
+     Prompt a user for a book ID. Print out the
+     information for that book or an error message
+     if the book can't be found.
+     */
+    
     int bookId;
     NODE* pWalker = list.pHead;
     NODE* bookNode = NULL;
@@ -320,6 +374,13 @@ void PrintBookById(HEADER list) {
 }
 
 int GetBookIdFromUser(HEADER list) {
+    /*
+     Prompt the user for the ID of a book they would
+     like to view the information for. Make sure
+     user selects a valid ID and return the ID from
+     function.
+     */
+    
     int validSelection = 0;
     char strBookId[MAXIDLENGTH + 1];
     int bookId = -1;
@@ -347,6 +408,11 @@ int GetBookIdFromUser(HEADER list) {
 }
 
 void PrintBookInfo(BOOK bookNode) {
+    /*
+     Print the id, title, author, and year published from
+     a BOOK object.
+     */
+    
     printf("Found book at ID #%d\n", bookNode.bookId);
     printf("Title: %s\n", bookNode.title);
     printf("Author: %s\n", bookNode.author);
@@ -355,6 +421,12 @@ void PrintBookInfo(BOOK bookNode) {
 }
 
 void WriteListToBinaryFile(HEADER list) {
+    /*
+     Prompt the user for a file name. File will be opened in write binary mode
+     in the DEFAULTFILEPATH folder. Print out all of the book information
+     contained in the list's nodes.
+     */
+    
     FILE* fp;
     int fileLength = strlen(DEFAULTFILEPATH) + MAXFILENAMESIZE;
     char fileName[MAXFILENAMESIZE + 1];
@@ -476,65 +548,21 @@ int GetUserFileOption(const char* fileName) {
 }
 
 
-//TODO: Update this once ready to submit assignment
 //HW #14, Noah Turnquist
 //Please select one of the options by entering the cooresponding number.
 //Initialize the list: (1)
 //Exit the program: (5)
 //1
 //
-//Initialized list.
-//Please select one of the options by entering the cooresponding number.
-//Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
-//4
-//
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 14.5
-//
-//5
-//
-//Found book at ID #5
-//Title: A Soldier's Duty
-//Author: Johnson, Jean
-//Year published: 2011
+//Initialized list. Ready for appending.
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
 //Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
 //Exit the program: (5)
-//4
+//2
 //
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 14.
-//0
-//
-//Found book at ID #0
-//Title: On Basilisk Station
-//Author: Weber, David
-//Year published: 1993
-//
-//Please select one of the options by entering the cooresponding number.
-//Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
-//4
-//
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 14.
-//14
-//
-//Found book at ID #14
-//Title: C Primer Plus
-//Author: Prata, Stephen
-//Year published: 2014
+//Appended 15 books to linked list.
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
@@ -544,22 +572,7 @@ int GetUserFileOption(const char* fileName) {
 //Exit the program: (5)
 //2
 //
-//Please select one of the options by entering the cooresponding number.
-//Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
-//4
-//
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 29.
-//0
-//
-//Found book at ID #0
-//Title: On Basilisk Station
-//Author: Weber, David
-//Year published: 1993
+//Appended 15 books to linked list.
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
@@ -571,51 +584,12 @@ int GetUserFileOption(const char* fileName) {
 //
 //Enter the id for a book whose info you would like printed.
 //Valid id's range from 0 to 29.
-//15
+//22
 //
-//Found book at ID #15
-//Title: On Basilisk Station
-//Author: Weber, David
-//Year published: 1993
-//
-//Please select one of the options by entering the cooresponding number.
-//Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
-//4
-//
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 29.
-//29
-//
-//Found book at ID #29
-//Title: C Primer Plus
-//Author: Prata, Stephen
-//Year published: 2014
-//
-//Please select one of the options by entering the cooresponding number.
-//Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
-//4
-//
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 29.2
-//27
-//
-//Please enter a valid ID.
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 29.
-//27
-//
-//Found book at ID #27
-//Title: I, Robot
-//Author: Asimov, Issac
-//Year published: 1950
+//Found book at ID #22
+//Title: The Mote in God's Eye
+//Author: Niven, Larry
+//Year published: 1992
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
@@ -626,43 +600,38 @@ int GetUserFileOption(const char* fileName) {
 //3
 //
 //The default file name is: default
-//Enter a file name up to 20 chars:
-//File default exists. Do you want to:
-//    Overwrite the file (1),
-//    Change the filename (2),
-//    Or abort (3)
-//Enter a number: 1
+//Enter a file name up to 20 chars: HW14Data
 //Successfully opened file.
-//Successfully wrote book On Basilisk Station to file default
-//Successfully wrote book The Sum of All Fears to file default
-//Successfully wrote book Battle Born to file default
-//Successfully wrote book Between Planets to file default
-//Successfully wrote book Stranger in a Strange Land to file default
-//Successfully wrote book A Soldier's Duty to file default
-//Successfully wrote book Swords Against Wizardry to file default
-//Successfully wrote book The Mote in God's Eye to file default
-//Successfully wrote book Uncharted Stars to file default
-//Successfully wrote book Raising Steam to file default
-//Successfully wrote book Ender's Game to file default
-//Successfully wrote book Foundation and Empire to file default
-//Successfully wrote book I, Robot to file default
-//Successfully wrote book The Hitchiker's guide to the Universe to file default
-//Successfully wrote book C Primer Plus to file default
-//Successfully wrote book On Basilisk Station to file default
-//Successfully wrote book The Sum of All Fears to file default
-//Successfully wrote book Battle Born to file default
-//Successfully wrote book Between Planets to file default
-//Successfully wrote book Stranger in a Strange Land to file default
-//Successfully wrote book A Soldier's Duty to file default
-//Successfully wrote book Swords Against Wizardry to file default
-//Successfully wrote book The Mote in God's Eye to file default
-//Successfully wrote book Uncharted Stars to file default
-//Successfully wrote book Raising Steam to file default
-//Successfully wrote book Ender's Game to file default
-//Successfully wrote book Foundation and Empire to file default
-//Successfully wrote book I, Robot to file default
-//Successfully wrote book The Hitchiker's guide to the Universe to file default
-//Successfully wrote book C Primer Plus to file default
+//Successfully wrote book On Basilisk Station to file HW14Data
+//Successfully wrote book The Sum of All Fears to file HW14Data
+//Successfully wrote book Battle Born to file HW14Data
+//Successfully wrote book Between Planets to file HW14Data
+//Successfully wrote book Stranger in a Strange Land to file HW14Data
+//Successfully wrote book A Soldier's Duty to file HW14Data
+//Successfully wrote book Swords Against Wizardry to file HW14Data
+//Successfully wrote book The Mote in God's Eye to file HW14Data
+//Successfully wrote book Uncharted Stars to file HW14Data
+//Successfully wrote book Raising Steam to file HW14Data
+//Successfully wrote book Ender's Game to file HW14Data
+//Successfully wrote book Foundation and Empire to file HW14Data
+//Successfully wrote book I, Robot to file HW14Data
+//Successfully wrote book The Hitchiker's guide to the Universe to file HW14Data
+//Successfully wrote book C Primer Plus to file HW14Data
+//Successfully wrote book On Basilisk Station to file HW14Data
+//Successfully wrote book The Sum of All Fears to file HW14Data
+//Successfully wrote book Battle Born to file HW14Data
+//Successfully wrote book Between Planets to file HW14Data
+//Successfully wrote book Stranger in a Strange Land to file HW14Data
+//Successfully wrote book A Soldier's Duty to file HW14Data
+//Successfully wrote book Swords Against Wizardry to file HW14Data
+//Successfully wrote book The Mote in God's Eye to file HW14Data
+//Successfully wrote book Uncharted Stars to file HW14Data
+//Successfully wrote book Raising Steam to file HW14Data
+//Successfully wrote book Ender's Game to file HW14Data
+//Successfully wrote book Foundation and Empire to file HW14Data
+//Successfully wrote book I, Robot to file HW14Data
+//Successfully wrote book The Hitchiker's guide to the Universe to file HW14Data
+//Successfully wrote book C Primer Plus to file HW14Data
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
@@ -673,19 +642,21 @@ int GetUserFileOption(const char* fileName) {
 //1
 //
 //Deleted list.
+//
 //Please select one of the options by entering the cooresponding number.
 //Initialize the list: (1)
 //Exit the program: (5)
 //1
 //
-//Initialized list.
+//Initialized list. Ready for appending.
+//
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
 //Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
 //Exit the program: (5)
 //2
+//
+//Appended 15 books to linked list.
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
@@ -730,10 +701,10 @@ int GetUserFileOption(const char* fileName) {
  8. Run the program. The list should be uninitialized by default.
     Enter invalid character and then valid character , 'adwadawda1' . Should give error message and then ask you to try again.
  
- ---Initialized list---
+ ---Initialized list/EMPTY LIST---
  
  1. Run the program. Hit 1 to initialize the list.
- - The menu option should be to: delete, append, write, get a book, and exit.
+ - The menu option should be to: delete, append, and exit.
  
  2. Run the program. Hit 1 to initialize the list.
  - Select a valid option, '2'. Should exit function and return userChoice.
@@ -751,10 +722,27 @@ int GetUserFileOption(const char* fileName) {
     Enter too many characters , 'hello' . Should give error message and then ask you to try again.
  
  7. Run the program. Hit 1 to initialize the list.
-    Enter valid character and then invalid characters , '3awdada' . Should exit function and return userChoice.
+    Enter valid character and then invalid characters , '2awdada' . Should exit function and return userChoice.
  
  8. Run the program. Hit 1 to initialize the list.
     Enter invalid character and then valid character , 'adwadawda1' . Should give error message and then ask you to try again.
+ 
+ 
+ ---Initialized list/EMPTY LIST---
+ 
+ 1. Run the program. Hit 1 to initialize the list.
+    Hit 2 to append to the list
+ - Should now have menu options for delete, append, write, get info, and exit
+ 
+ 2. Run the program. Hit 1 to initialize the list.
+    Hit 2 to append to the list
+    Hit 4 to test menu
+ - Should print message and return userChoice
+ 
+ 3. Run the program. Hit 1 to initialize the list.
+    Hit 2 to append to the list
+    Hit 6 to test menu
+ - Should print error message and ask you to try again
  
  
  
@@ -763,29 +751,35 @@ int GetUserFileOption(const char* fileName) {
  --- Test AppendLinkedList() ---
  
  1. Start program, initialize list by selecting 1
+    Hit 2 to append some books to list
     On next menu print some books using print book info option
  - Try a book somewhere in the middle of the list. Make sure info is as expected
  
  2. Start program, initialize list by selecting 1
+    Hit 2 to append some books to list
     On next menu print some books using print book info option
  - Try a book at the beginning of the list. Make sure info is as expected
  
  3. Start program, initialize list by selecting 1
+    Hit 2 to append some books to list
     On next menu print some books using print book info option
  - Try a book at the end of the list. Make sure info is as expected
  
  4. Start program, initialize list by selecting 1
-    Hit 2 to append more books to the end of the list
+    Hit 2 to append some books to list
+    Hit 2 again to append more books to the end of the list
     On next menu print some books using print book info option
  - Try a book somewhere in the middle of the list. Make sure info is as expected
  
  5. Start program, initialize list by selecting 1
+    Hit 2 to append books to the end of the list
     On next menu print some books using print book info option
     Hit 2 to append more books to the end of the list
  - Try a book at the beginning of the list. Make sure info is as expected
  
  6. Start program, initialize list by selecting 1
     On next menu print some books using print book info option
+    Hit 2 to append some books to list
     Hit 2 to append more books to the end of the list
  - Try a book at the end of the list. Make sure info is as expected
  
@@ -808,11 +802,15 @@ int GetUserFileOption(const char* fileName) {
  --- Test DeleteLinkedList() ---
  1. Run program. Hit 1 to initialize the list.
     Hit 1 the second time the menu pops up to delete the list.
- - Add breakpoint in menu and make sure that HEADER has pHead = NULL and numBooks = 0, meaning the list was deleted.
+ - Add breakpoint in menu and make sure that HEADER has pHead = NULL, pLast = NULL, listInitialized = 0, and numBooks = 0, meaning the list was deleted.
  
- 2. Run program. Hit 2 to append more data to list.
+ 2. Run program. Hit 1 to initialize list, Hit 2 to append data to list.
     Hit 1 the next time the menu pops up to delete the list.
- - Add breakpoint in menu and make sure that HEADER has pHead = NULL and numBooks = 0, meaning the list was deleted.
+ - Add breakpoint in menu and make sure that HEADER has pHead = NULL, pLast = NULL, listInitialized = 0, and numBooks = 0, meaning the list was deleted.
+ 
+ 3. Run program. Hit 1 to initialize list, Hit 2 to append data to list. Hit 2 to append more data to list
+    Hit 1 the next time the menu pops up to delete the list.
+ - Add breakpoint in menu and make sure that HEADER has pHead = NULL, pLast = NULL, listInitialized = 0, and numBooks = 0, meaning the list was deleted.
  
  
  --- Test GetBookIdFromUser() ---
