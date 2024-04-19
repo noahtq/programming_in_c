@@ -6,7 +6,7 @@
 #include <ctype.h>
 
 #define FLUSH while(getchar() != '\n')
-#define MAXTITLE 10
+#define MAXTITLE 50
 #define MAXAUTHOR 50
 #define MAXYEAR 4
 #define DEFAULTFILEPATH "/Users/noahturnquist/Documents/College/Spring_2024/Programming_in_C/Assignments/HW_14_Noah_Turnquist/HW_14_Noah_Turnquist/"
@@ -222,7 +222,7 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
         newHeader.pLast = pPrev;
         newHeader.listInitialized = list.listInitialized;
     }
-    printf("Appended %d books to linked list.\n\n", newHeader.numBooks);
+    printf("Appended %d books to linked list.\n\n", newHeader.numBooks - list.numBooks);
     
     fclose(fp);
     
@@ -554,58 +554,15 @@ int GetUserFileOption(const char* fileName) {
 //Exit the program: (5)
 //1
 //
-//Initialized list.
-//Please select one of the options by entering the cooresponding number.
-//Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
-//4
-//
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 14.5
-//
-//5
-//
-//Found book at ID #5
-//Title: A Soldier's Duty
-//Author: Johnson, Jean
-//Year published: 2011
+//Initialized list. Ready for appending.
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
 //Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
 //Exit the program: (5)
-//4
+//2
 //
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 14.
-//0
-//
-//Found book at ID #0
-//Title: On Basilisk Station
-//Author: Weber, David
-//Year published: 1993
-//
-//Please select one of the options by entering the cooresponding number.
-//Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
-//4
-//
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 14.
-//14
-//
-//Found book at ID #14
-//Title: C Primer Plus
-//Author: Prata, Stephen
-//Year published: 2014
+//Appended 15 books to linked list.
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
@@ -615,22 +572,7 @@ int GetUserFileOption(const char* fileName) {
 //Exit the program: (5)
 //2
 //
-//Please select one of the options by entering the cooresponding number.
-//Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
-//4
-//
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 29.
-//0
-//
-//Found book at ID #0
-//Title: On Basilisk Station
-//Author: Weber, David
-//Year published: 1993
+//Appended 15 books to linked list.
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
@@ -642,51 +584,12 @@ int GetUserFileOption(const char* fileName) {
 //
 //Enter the id for a book whose info you would like printed.
 //Valid id's range from 0 to 29.
-//15
+//22
 //
-//Found book at ID #15
-//Title: On Basilisk Station
-//Author: Weber, David
-//Year published: 1993
-//
-//Please select one of the options by entering the cooresponding number.
-//Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
-//4
-//
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 29.
-//29
-//
-//Found book at ID #29
-//Title: C Primer Plus
-//Author: Prata, Stephen
-//Year published: 2014
-//
-//Please select one of the options by entering the cooresponding number.
-//Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
-//4
-//
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 29.2
-//27
-//
-//Please enter a valid ID.
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 29.
-//27
-//
-//Found book at ID #27
-//Title: I, Robot
-//Author: Asimov, Issac
-//Year published: 1950
+//Found book at ID #22
+//Title: The Mote in God's Eye
+//Author: Niven, Larry
+//Year published: 1992
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
@@ -697,43 +600,38 @@ int GetUserFileOption(const char* fileName) {
 //3
 //
 //The default file name is: default
-//Enter a file name up to 20 chars:
-//File default exists. Do you want to:
-//    Overwrite the file (1),
-//    Change the filename (2),
-//    Or abort (3)
-//Enter a number: 1
+//Enter a file name up to 20 chars: HW14Data
 //Successfully opened file.
-//Successfully wrote book On Basilisk Station to file default
-//Successfully wrote book The Sum of All Fears to file default
-//Successfully wrote book Battle Born to file default
-//Successfully wrote book Between Planets to file default
-//Successfully wrote book Stranger in a Strange Land to file default
-//Successfully wrote book A Soldier's Duty to file default
-//Successfully wrote book Swords Against Wizardry to file default
-//Successfully wrote book The Mote in God's Eye to file default
-//Successfully wrote book Uncharted Stars to file default
-//Successfully wrote book Raising Steam to file default
-//Successfully wrote book Ender's Game to file default
-//Successfully wrote book Foundation and Empire to file default
-//Successfully wrote book I, Robot to file default
-//Successfully wrote book The Hitchiker's guide to the Universe to file default
-//Successfully wrote book C Primer Plus to file default
-//Successfully wrote book On Basilisk Station to file default
-//Successfully wrote book The Sum of All Fears to file default
-//Successfully wrote book Battle Born to file default
-//Successfully wrote book Between Planets to file default
-//Successfully wrote book Stranger in a Strange Land to file default
-//Successfully wrote book A Soldier's Duty to file default
-//Successfully wrote book Swords Against Wizardry to file default
-//Successfully wrote book The Mote in God's Eye to file default
-//Successfully wrote book Uncharted Stars to file default
-//Successfully wrote book Raising Steam to file default
-//Successfully wrote book Ender's Game to file default
-//Successfully wrote book Foundation and Empire to file default
-//Successfully wrote book I, Robot to file default
-//Successfully wrote book The Hitchiker's guide to the Universe to file default
-//Successfully wrote book C Primer Plus to file default
+//Successfully wrote book On Basilisk Station to file HW14Data
+//Successfully wrote book The Sum of All Fears to file HW14Data
+//Successfully wrote book Battle Born to file HW14Data
+//Successfully wrote book Between Planets to file HW14Data
+//Successfully wrote book Stranger in a Strange Land to file HW14Data
+//Successfully wrote book A Soldier's Duty to file HW14Data
+//Successfully wrote book Swords Against Wizardry to file HW14Data
+//Successfully wrote book The Mote in God's Eye to file HW14Data
+//Successfully wrote book Uncharted Stars to file HW14Data
+//Successfully wrote book Raising Steam to file HW14Data
+//Successfully wrote book Ender's Game to file HW14Data
+//Successfully wrote book Foundation and Empire to file HW14Data
+//Successfully wrote book I, Robot to file HW14Data
+//Successfully wrote book The Hitchiker's guide to the Universe to file HW14Data
+//Successfully wrote book C Primer Plus to file HW14Data
+//Successfully wrote book On Basilisk Station to file HW14Data
+//Successfully wrote book The Sum of All Fears to file HW14Data
+//Successfully wrote book Battle Born to file HW14Data
+//Successfully wrote book Between Planets to file HW14Data
+//Successfully wrote book Stranger in a Strange Land to file HW14Data
+//Successfully wrote book A Soldier's Duty to file HW14Data
+//Successfully wrote book Swords Against Wizardry to file HW14Data
+//Successfully wrote book The Mote in God's Eye to file HW14Data
+//Successfully wrote book Uncharted Stars to file HW14Data
+//Successfully wrote book Raising Steam to file HW14Data
+//Successfully wrote book Ender's Game to file HW14Data
+//Successfully wrote book Foundation and Empire to file HW14Data
+//Successfully wrote book I, Robot to file HW14Data
+//Successfully wrote book The Hitchiker's guide to the Universe to file HW14Data
+//Successfully wrote book C Primer Plus to file HW14Data
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
@@ -744,19 +642,21 @@ int GetUserFileOption(const char* fileName) {
 //1
 //
 //Deleted list.
+//
 //Please select one of the options by entering the cooresponding number.
 //Initialize the list: (1)
 //Exit the program: (5)
 //1
 //
-//Initialized list.
+//Initialized list. Ready for appending.
+//
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
 //Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
 //Exit the program: (5)
 //2
+//
+//Appended 15 books to linked list.
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
