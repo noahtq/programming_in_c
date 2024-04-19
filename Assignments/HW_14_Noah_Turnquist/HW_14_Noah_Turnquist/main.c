@@ -57,6 +57,9 @@ int main(void) {
             case INITORDELETELIST:
                 list = InitializeOrDeleteLinkedList(list);
                 break;
+            case APPEND:
+                list = AppendLinkedList(INPUTFILENAME, list);
+                break;
             case PRINTBOOK:
                 PrintBookById(list);
                 break;
@@ -139,8 +142,8 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
     BOOK tempBook;
     int bookId = list.numBooks;
     NODE* pHead = list.pHead;
-    NODE* pPrev;
-    NODE* pCur;
+    NODE* pPrev = list.pHead;
+    NODE* pNew;
     
     if ((fp = OpenFileInReadMode(fileName)) == NULL) {
         printf("Error. Couldn't open file.\n");
@@ -152,16 +155,16 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
             if (tempBook.bookId == -1) {
                 printf("Error reading book.\n");
             } else {
-                pCur = (NODE*) malloc(sizeof(NODE));
-                if (pCur) {
-                    pCur->data = tempBook;
-                    pCur->link = NULL;
-                    if (pHead == NULL) {
-                        pHead = pCur;
+                pNew = (NODE*) malloc(sizeof(NODE));
+                if (pNew) {
+                    pNew->data = tempBook;
+                    if (pPrev == NULL) {
+                        pHead = pNew;
                     } else {
-                        pPrev->link = pCur;
+                        pNew->link = NULL;
+                        pPrev->link = pNew;
                     }
-                    pPrev = pCur;
+                    pPrev = pNew;
                     bookId++;
                 } else {
                     printf("Error couldn't allocate memory for node.\n");
