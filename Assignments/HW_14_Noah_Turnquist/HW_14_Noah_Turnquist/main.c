@@ -131,10 +131,10 @@ HEADER InitializeOrDeleteLinkedList(HEADER list) {
     
     if (!list.listInitialized) {
         newHeader.listInitialized = 1;
-        printf("Initialized list. Ready for appending.\n");
+        printf("Initialized list. Ready for appending.\n\n");
     } else {
         newHeader = DeleteLinkedList(list);
-        printf("Deleted list.\n");
+        printf("Deleted list.\n\n");
     }
     
     return newHeader;
@@ -199,6 +199,7 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
         newHeader.pLast = pPrev;
         newHeader.listInitialized = list.listInitialized;
     }
+    printf("Appended %d books to linked list.\n\n", newHeader.numBooks);
     
     fclose(fp);
     
