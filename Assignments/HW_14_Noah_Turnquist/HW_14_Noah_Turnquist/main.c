@@ -11,6 +11,7 @@
 #define MAXYEAR 4
 #define DEFAULTFILEPATH "/Users/noahturnquist/Documents/College/Spring_2024/Programming_in_C/Assignments/HW_14_Noah_Turnquist/HW_14_Noah_Turnquist/"
 #define INPUTFILENAME "HW14DataMac.txt"
+#define MAXIDLENGTH 5
 
 typedef struct {
     int bookId;
@@ -40,6 +41,9 @@ void AppendFileNameToFilePath(const char* fileName, const char* filepath, char* 
 BOOK GetBookFromFile(FILE* fp, int bookId);
 int FileToStringWithoutNewline(FILE* fp, char* str, int maxChars);
 void DestroyNewlinesAndCarriageReturns(FILE* fp);
+void PrintBookById(HEADER list);
+int GetBookIdFromUser(HEADER list);
+void PrintBookInfo(BOOK bookNode);
 
 int main(void) {
     int userChoice;
@@ -52,6 +56,9 @@ int main(void) {
         switch (userChoice) {
             case INITORDELETELIST:
                 list = InitializeOrDeleteLinkedList(list);
+                break;
+            case PRINTBOOK:
+                PrintBookById(list);
                 break;
             case EXIT:
                 printf("Exiting program.\n");
@@ -106,6 +113,7 @@ HEADER InitializeOrDeleteLinkedList(HEADER list) {
         printf("Initialized list.\n");
     } else {
         newHeader = DeleteLinkedList(list);
+        printf("Deleted list.\n");
     }
     
     return newHeader;
@@ -156,7 +164,7 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
                     pPrev = pCur;
                     bookId++;
                 } else {
-                    printf("Error couldn't allocate memory for node.\n"); //TODO: Make sure not exiting function here is okay.
+                    printf("Error couldn't allocate memory for node.\n");
                 }
             }
             
@@ -263,6 +271,63 @@ void DestroyNewlinesAndCarriageReturns(FILE* fp) {
     ungetc(ch, fp);
 }
 
+void PrintBookById(HEADER list) {
+    int bookId;
+    NODE* pWalker = list.pHead;
+    NODE* bookNode = NULL;
+    
+    bookId = GetBookIdFromUser(list);
+    
+    while (pWalker != NULL && bookNode == NULL) {
+        if (pWalker->data.bookId == bookId) {
+            bookNode = pWalker;
+        } else {
+            pWalker = pWalker->link;
+        }
+    }
+    
+    if (bookNode == NULL) {
+        printf("Couldn't find the requested book in the list.\n");
+    } else {
+        PrintBookInfo(bookNode->data);
+    }
+}
+
+int GetBookIdFromUser(HEADER list) {
+    int validSelection = 0;
+    char strBookId[MAXIDLENGTH + 1];
+    int bookId = -1;
+    
+    do {
+        printf("Enter the id for a book whose info you would like printed.\n");
+        printf("Valid id's range from 0 to %d.\n", list.numBooks - 1);
+        
+        scanf(" %5s", strBookId);
+        int matched = (int) strspn(strBookId, "0123456789");
+        if (matched == strlen(strBookId)) {
+            bookId = atoi(strBookId);
+            if (bookId >= 0 && bookId <= list.numBooks - 1) {
+                validSelection = 1;
+            } else {
+                printf("Please enter a valid ID.\n");
+            }
+        } else {
+            printf("Please enter a number.\n");
+        }
+        FLUSH;
+    } while (!validSelection);
+    
+    return bookId;
+}
+
+void PrintBookInfo(BOOK bookNode) {
+    printf("Found book at ID #%d\n", bookNode.bookId);
+    printf("Title: %s\n", bookNode.title);
+    printf("Author: %s\n", bookNode.author);
+    printf("Year published: %s\n", bookNode.published);
+    putchar('\n');
+}
+
 
 /*
  TEST PLAN
@@ -327,7 +392,32 @@ void DestroyNewlinesAndCarriageReturns(FILE* fp) {
  
  --- Test AppendLinkedList() ---
  
- 1. //TODO: Add tests here
+ 1. Start program, initialize list by selecting 1
+    On next menu print some books using print book info option
+ - Try a book somewhere in the middle of the list. Make sure info is as expected
+ 
+ 2. Start program, initialize list by selecting 1
+    On next menu print some books using print book info option
+ - Try a book at the beginning of the list. Make sure info is as expected
+ 
+ 3. Start program, initialize list by selecting 1
+    On next menu print some books using print book info option
+ - Try a book at the end of the list. Make sure info is as expected
+ 
+ 4. Start program, initialize list by selecting 1
+    Hit 2 to append more books to the end of the list
+    On next menu print some books using print book info option
+ - Try a book somewhere in the middle of the list. Make sure info is as expected
+ 
+ 5. Start program, initialize list by selecting 1
+    On next menu print some books using print book info option
+    Hit 2 to append more books to the end of the list
+ - Try a book at the beginning of the list. Make sure info is as expected
+ 
+ 6. Start program, initialize list by selecting 1
+    On next menu print some books using print book info option
+    Hit 2 to append more books to the end of the list
+ - Try a book at the end of the list. Make sure info is as expected
  
  *** Test OpenFileInReadMode() ***
  1. Use bad filepath or filename.
@@ -350,8 +440,50 @@ void DestroyNewlinesAndCarriageReturns(FILE* fp) {
     Hit 1 the second time the menu pops up to delete the list.
  - Add breakpoint in menu and make sure that HEADER has pHead = NULL and numBooks = 0, meaning the list was deleted.
  
- 1. Run program. Hit 2 to append more data to list.
+ 2. Run program. Hit 2 to append more data to list.
     Hit 1 the next time the menu pops up to delete the list.
  - Add breakpoint in menu and make sure that HEADER has pHead = NULL and numBooks = 0, meaning the list was deleted.
+ 
+ 
+ --- Test GetBookIdFromUser() ---
+ 
+ 1. Run program. Hit 1 to initialize the list.
+    Hit 2 to append more books to end of list
+    Hit 4 to get book info.
+ - Enter a valid id somewhere in the middle and make sure the expected info is printed
+ 
+ 2. Run program. Hit 1 to initialize the list.
+    Hit 2 to append more books to end of list
+    Hit 4 to get book info.
+ - Enter a valid id at the beginning of the list, '0', and make sure the expected info is printed
+ 
+ 3. Run program. Hit 1 to initialize the list.
+    Hit 2 to append more books to end of list
+    Hit 4 to get book info.
+ - Enter the last valid id in the list and make sure the expected info is printed
+ 
+ 4. Run program. Hit 1 to initialize the list.
+    Hit 2 to append more books to end of list
+    Hit 4 to get book info.
+ - Enter some letters, 'adwagwaf'.
+ - Should print error message and ask you to try again.
+ 
+ 5. Run program. Hit 1 to initialize the list.
+    Hit 2 to append more books to end of list
+    Hit 4 to get book info.
+ - Enter a id that's invalid, '99'.
+ - Should print error message and ask you to try again.
+ 
+ 6. Run program. Hit 1 to initialize the list.
+    Hit 2 to append more books to end of list
+    Hit 4 to get book info.
+ - Enter some gibberish followed by a valid id 'a5'.
+ - Should print error message and ask you to try again.
+ 
+ 7. Run program. Hit 1 to initialize the list.
+    Hit 2 to append more books to end of list
+    Hit 4 to get book info.
+ - Enter a id that's valid followed by invalid characters, '5adwadw'.
+ - Should print error message and ask you to try again.
  
  */
