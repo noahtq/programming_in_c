@@ -10,7 +10,7 @@
 #define MAXAUTHOR 50
 #define MAXYEAR 4
 #define DEFAULTFILEPATH "/Users/noahturnquist/Documents/College/Spring_2024/Programming_in_C/Assignments/HW_14_Noah_Turnquist/HW_14_Noah_Turnquist/"
-#define INPUTFILENAME "HW14DataMac.txt"
+#define INPUTFILENAME "HW14Data.txt"
 #define MAXIDLENGTH 5
 #define DEFAULTFILENAME "default"
 #define MAXFILENAMESIZE 20
@@ -22,9 +22,9 @@ typedef struct {
     char published[MAXYEAR + 1];
 } BOOK;
 
-typedef struct {
+typedef struct node_tag{
     BOOK data;
-    struct NODE* link;
+    struct node_tag* link;
 } NODE;
 
 typedef struct {
@@ -81,7 +81,7 @@ int main(void) {
         }
     } while(userChoice != EXIT);
     
-    DeleteLinkedList(list);
+    list = DeleteLinkedList(list);
     
     return 0;
 }
@@ -231,21 +231,20 @@ void AppendFileNameToFilePath(const char* fileName, const char* filepath, char* 
 }
 
 BOOK GetBookFromFile(FILE* fp, int bookId) {
-    BOOK tempBook;
+    BOOK tempBook = { -1, "", "", "" };
     char title[MAXTITLE + 1];
     char author[MAXAUTHOR + 1];
     char published[MAXYEAR + 1];
     
-    tempBook.bookId = -1;
-    if (!FileToStringWithoutNewline(fp, title, MAXTITLE)) {
+    if (!FileToStringWithoutNewline(fp, title, MAXTITLE + 1)) {
         printf("Error: couldn't read title.\n");
         return tempBook;
     }
-    if (!FileToStringWithoutNewline(fp, author, MAXAUTHOR)) {
+    if (!FileToStringWithoutNewline(fp, author, MAXAUTHOR + 1)) {
         printf("Error: couldn't read author.\n");
         return tempBook;
     }
-    if (!FileToStringWithoutNewline(fp, published, MAXYEAR)) {
+    if (!FileToStringWithoutNewline(fp, published, MAXYEAR + 1)) {
         printf("Error: couldn't read year published.\n");
         return tempBook;
     }
@@ -254,7 +253,6 @@ BOOK GetBookFromFile(FILE* fp, int bookId) {
     strncpy(tempBook.title, title, MAXTITLE);
     strncpy(tempBook.author, author, MAXAUTHOR);
     strncpy(tempBook.published, published, MAXYEAR);
-    tempBook.published[MAXYEAR] = '\0';
     
     return tempBook;
 }
@@ -265,7 +263,12 @@ int FileToStringWithoutNewline(FILE* fp, char* str, int maxChars) {
     
     DestroyNewlinesAndCarriageReturns(fp);
     
-    if (fgets(str, maxChars + 1, fp)) {
+    if (fgets(str, maxChars, fp)) {
+        //If string size is reached before end of line in file.
+        //Flush the rest of that line.
+        if (strchr(str, '\n') == NULL) {
+            while (getc(fp) != '\n');
+        }
         
         //Remove all newlines and carriage returns from string
         while ((newline = strchr(str, '\n')) != NULL) {
@@ -276,6 +279,8 @@ int FileToStringWithoutNewline(FILE* fp, char* str, int maxChars) {
             *carriageReturn = '\0';
         }
         
+        //Ensure last character in string is null character
+        str[maxChars - 1] = '\0';
         return 1;
     } else {
         return 0;
@@ -471,6 +476,7 @@ int GetUserFileOption(const char* fileName) {
 }
 
 
+//TODO: Update this once ready to submit assignment
 //HW #14, Noah Turnquist
 //Please select one of the options by entering the cooresponding number.
 //Initialize the list: (1)
