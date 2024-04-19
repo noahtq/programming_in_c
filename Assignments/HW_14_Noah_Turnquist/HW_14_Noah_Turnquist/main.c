@@ -115,7 +115,7 @@ int GetMenuOptionFromUser(HEADER list) {
             } else if (list.pHead && list.listInitialized && (userChoice >= INITORDELETELIST && userChoice <= EXIT)) {
                 validSelection = 1;
             } else {
-                printf("Please pick from one of the menu option.\n");
+                printf("Please pick from one of the menu options.\n");
             }
         } else {
             printf("Please enter a number.\n");
