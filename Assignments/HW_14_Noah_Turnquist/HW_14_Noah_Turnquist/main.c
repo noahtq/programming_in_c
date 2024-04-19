@@ -88,6 +88,13 @@ int main(void) {
 }
 
 int GetMenuOptionFromUser(HEADER list) {
+    /*
+     Prompt user to select a menu option.
+     Only show valid menu options and check to make sure
+     users enters a valid option.
+     Return the users selection.
+     */
+    
     int validSelection = 0;
     char chUserChoice;
     int userChoice = -1;
@@ -127,6 +134,12 @@ int GetMenuOptionFromUser(HEADER list) {
 }
 
 HEADER InitializeOrDeleteLinkedList(HEADER list) {
+    /*
+     If linked list is uninitialzied, initialize it
+     otherwise delete all of the list elements and set
+     pointers to NULL
+     */
+    
     HEADER newHeader = { NULL, NULL, 0, 0 };
     
     if (!list.listInitialized) {
@@ -141,6 +154,11 @@ HEADER InitializeOrDeleteLinkedList(HEADER list) {
 }
 
 HEADER DeleteLinkedList(HEADER list) {
+    /*
+     Go through linked list and deallocate memory
+     for nodes. Set HEADER pointers to null.
+     */
+    
     NODE* pCur = list.pHead;
     NODE* pNext;
     
@@ -155,6 +173,11 @@ HEADER DeleteLinkedList(HEADER list) {
 }
 
 HEADER AppendLinkedList(char* fileName, HEADER list) {
+    /*
+     Grab all books in format (Title, Author, Year Published)
+     from file at fileName. Append to the end of the linked list "list".
+     */
+    
     FILE* fp;
     HEADER newHeader;
     BOOK tempBook;
@@ -207,6 +230,11 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
 }
 
 FILE* OpenFileInReadMode(char* fileName) {
+    /*
+     Open the file in DEFAULTFILEPATH with the name fileName in read mode.
+     Return a pointer to the file.
+     */
+    
     FILE* fp;
     int stringLength = (int) strlen(DEFAULTFILEPATH) + (int) strlen(fileName);
     char fullFilePath[stringLength + 1];
@@ -222,7 +250,7 @@ FILE* OpenFileInReadMode(char* fileName) {
 
 void AppendFileNameToFilePath(const char* fileName, const char* filepath, char* fullPath, int stringLength) {
     /*
-     Add together a filename, filepath, and extension.
+     Add together a filename and filepath.
      Ensure that total filepath size does not exceed stringLength
      */
     
@@ -238,6 +266,11 @@ void AppendFileNameToFilePath(const char* fileName, const char* filepath, char* 
 }
 
 BOOK GetBookFromFile(FILE* fp, int bookId) {
+    /*
+     Create a book object from the info in the file fp.
+     Check for errors and return the book object.
+     */
+    
     BOOK tempBook = { -1, "", "", "" };
     char title[MAXTITLE + 1];
     char author[MAXAUTHOR + 1];
@@ -265,6 +298,12 @@ BOOK GetBookFromFile(FILE* fp, int bookId) {
 }
 
 int FileToStringWithoutNewline(FILE* fp, char* str, int maxChars) {
+    /*
+     Read in a line characters from the text file fp,
+     store the input in str.
+     Return 1 if successful and 0 if unsuccessful.
+     */
+    
     char* newline;
     char* carriageReturn;
     
@@ -295,9 +334,11 @@ int FileToStringWithoutNewline(FILE* fp, char* str, int maxChars) {
 }
 
 void DestroyNewlinesAndCarriageReturns(FILE* fp) {
-    // When reading files from different operating systems,
-    // we might have extra newlines '\n' or carriage returns '\r'.
-    // This code discards those to make sure we can read everything as expected.
+    /* 
+     When reading files from different operating systems,
+     we might have extra newlines '\n' or carriage returns '\r'.
+     This code discards those to make sure we can read everything as expected.
+     */
     
     char ch;
     while((ch = getc(fp)) == '\n' || ch == '\r');
@@ -305,6 +346,12 @@ void DestroyNewlinesAndCarriageReturns(FILE* fp) {
 }
 
 void PrintBookById(HEADER list) {
+    /*
+     Prompt a user for a book ID. Print out the
+     information for that book or an error message
+     if the book can't be found.
+     */
+    
     int bookId;
     NODE* pWalker = list.pHead;
     NODE* bookNode = NULL;
@@ -327,6 +374,13 @@ void PrintBookById(HEADER list) {
 }
 
 int GetBookIdFromUser(HEADER list) {
+    /*
+     Prompt the user for the ID of a book they would
+     like to view the information for. Make sure
+     user selects a valid ID and return the ID from
+     function.
+     */
+    
     int validSelection = 0;
     char strBookId[MAXIDLENGTH + 1];
     int bookId = -1;
@@ -354,6 +408,11 @@ int GetBookIdFromUser(HEADER list) {
 }
 
 void PrintBookInfo(BOOK bookNode) {
+    /*
+     Print the id, title, author, and year published from
+     a BOOK object.
+     */
+    
     printf("Found book at ID #%d\n", bookNode.bookId);
     printf("Title: %s\n", bookNode.title);
     printf("Author: %s\n", bookNode.author);
@@ -362,6 +421,12 @@ void PrintBookInfo(BOOK bookNode) {
 }
 
 void WriteListToBinaryFile(HEADER list) {
+    /*
+     Prompt the user for a file name. File will be opened in write binary mode
+     in the DEFAULTFILEPATH folder. Print out all of the book information
+     contained in the list's nodes.
+     */
+    
     FILE* fp;
     int fileLength = strlen(DEFAULTFILEPATH) + MAXFILENAMESIZE;
     char fileName[MAXFILENAMESIZE + 1];
@@ -483,7 +548,6 @@ int GetUserFileOption(const char* fileName) {
 }
 
 
-//TODO: Update this once ready to submit assignment
 //HW #14, Noah Turnquist
 //Please select one of the options by entering the cooresponding number.
 //Initialize the list: (1)
