@@ -6,7 +6,7 @@
 #include <ctype.h>
 
 #define FLUSH while(getchar() != '\n')
-#define MAXTITLE 50
+#define MAXTITLE 10
 #define MAXAUTHOR 50
 #define MAXYEAR 4
 #define DEFAULTFILEPATH "/Users/noahturnquist/Documents/College/Spring_2024/Programming_in_C/Assignments/HW_14_Noah_Turnquist/HW_14_Noah_Turnquist/"
@@ -31,6 +31,7 @@ typedef struct {
     NODE* pHead;
     NODE* pLast;
     int numBooks;
+    int listInitialized;
 } HEADER;
 
 enum MENUOPTIONS { INITORDELETELIST = 1, APPEND, WRITETOBINARY, PRINTBOOK, EXIT };
@@ -56,7 +57,7 @@ int GetUserFileOption(const char* fileName);
 
 int main(void) {
     int userChoice;
-    HEADER list = { NULL, 0 };
+    HEADER list = { NULL, NULL, 0, 0 };
     
     printf("HW #14, Noah Turnquist\n");
     
@@ -93,21 +94,25 @@ int GetMenuOptionFromUser(HEADER list) {
     
     do {
         printf("Please select one of the options by entering the cooresponding number.\n");
-        if (list.pHead == NULL) {
+        if (list.listInitialized == 0) {
             printf("Initialize the list: (%d)\n", INITORDELETELIST);
         } else {
             printf("Delete the list: (%d)\n", INITORDELETELIST);
             printf("Append data from file to the list: (%d)\n", APPEND);
-            printf("Write the list out to a binary file: (%d)\n", WRITETOBINARY);
-            printf("Get info on a book: (%d)\n", PRINTBOOK);
+            if (list.pHead) {
+                printf("Write the list out to a binary file: (%d)\n", WRITETOBINARY);
+                printf("Get info on a book: (%d)\n", PRINTBOOK);
+            }
         }
         printf("Exit the program: (%d)\n", EXIT);
         chUserChoice = getchar();
         if (isdigit(chUserChoice)) {
             userChoice = chUserChoice - '0';
-            if (list.pHead == NULL && (userChoice == INITORDELETELIST || userChoice == EXIT)) {
+            if (list.listInitialized == 0 && (userChoice == INITORDELETELIST || userChoice == EXIT)) {
                 validSelection = 1;
-            } else if (list.pHead && (userChoice >= INITORDELETELIST && userChoice <= EXIT)) {
+            } else if (list.listInitialized == 1 && list.pHead == NULL && (userChoice == INITORDELETELIST || userChoice == APPEND || userChoice == EXIT)) {
+                validSelection = 1;
+            } else if (list.pHead && list.listInitialized && (userChoice >= INITORDELETELIST && userChoice <= EXIT)) {
                 validSelection = 1;
             } else {
                 printf("Please pick from one of the menu option.\n");
@@ -122,11 +127,11 @@ int GetMenuOptionFromUser(HEADER list) {
 }
 
 HEADER InitializeOrDeleteLinkedList(HEADER list) {
-    HEADER newHeader;
+    HEADER newHeader = { NULL, NULL, 0, 0 };
     
-    if (list.pHead == NULL) {
-        newHeader = AppendLinkedList(INPUTFILENAME, list);
-        printf("Initialized list.\n");
+    if (!list.listInitialized) {
+        newHeader.listInitialized = 1;
+        printf("Initialized list. Ready for appending.\n");
     } else {
         newHeader = DeleteLinkedList(list);
         printf("Deleted list.\n");
@@ -145,7 +150,7 @@ HEADER DeleteLinkedList(HEADER list) {
         pCur = pNext;
     }
     
-    HEADER newHeader = { NULL, NULL, 0 };
+    HEADER newHeader = { NULL, NULL, 0, 0 };
     return newHeader;
 }
 
@@ -192,6 +197,7 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
         newHeader.pHead = pHead;
         newHeader.numBooks = bookId;
         newHeader.pLast = pPrev;
+        newHeader.listInitialized = list.listInitialized;
     }
     
     fclose(fp);
@@ -730,10 +736,10 @@ int GetUserFileOption(const char* fileName) {
  8. Run the program. The list should be uninitialized by default.
     Enter invalid character and then valid character , 'adwadawda1' . Should give error message and then ask you to try again.
  
- ---Initialized list---
+ ---Initialized list/EMPTY LIST---
  
  1. Run the program. Hit 1 to initialize the list.
- - The menu option should be to: delete, append, write, get a book, and exit.
+ - The menu option should be to: delete, append, and exit.
  
  2. Run the program. Hit 1 to initialize the list.
  - Select a valid option, '2'. Should exit function and return userChoice.
@@ -751,10 +757,27 @@ int GetUserFileOption(const char* fileName) {
     Enter too many characters , 'hello' . Should give error message and then ask you to try again.
  
  7. Run the program. Hit 1 to initialize the list.
-    Enter valid character and then invalid characters , '3awdada' . Should exit function and return userChoice.
+    Enter valid character and then invalid characters , '2awdada' . Should exit function and return userChoice.
  
  8. Run the program. Hit 1 to initialize the list.
     Enter invalid character and then valid character , 'adwadawda1' . Should give error message and then ask you to try again.
+ 
+ 
+ ---Initialized list/EMPTY LIST---
+ 
+ 1. Run the program. Hit 1 to initialize the list.
+    Hit 2 to append to the list
+ - Should now have menu options for delete, append, write, get info, and exit
+ 
+ 2. Run the program. Hit 1 to initialize the list.
+    Hit 2 to append to the list
+    Hit 4 to test menu
+ - Should print message and return userChoice
+ 
+ 3. Run the program. Hit 1 to initialize the list.
+    Hit 2 to append to the list
+    Hit 6 to test menu
+ - Should print error message and ask you to try again
  
  
  
@@ -763,29 +786,35 @@ int GetUserFileOption(const char* fileName) {
  --- Test AppendLinkedList() ---
  
  1. Start program, initialize list by selecting 1
+    Hit 2 to append some books to list
     On next menu print some books using print book info option
  - Try a book somewhere in the middle of the list. Make sure info is as expected
  
  2. Start program, initialize list by selecting 1
+    Hit 2 to append some books to list
     On next menu print some books using print book info option
  - Try a book at the beginning of the list. Make sure info is as expected
  
  3. Start program, initialize list by selecting 1
+    Hit 2 to append some books to list
     On next menu print some books using print book info option
  - Try a book at the end of the list. Make sure info is as expected
  
  4. Start program, initialize list by selecting 1
-    Hit 2 to append more books to the end of the list
+    Hit 2 to append some books to list
+    Hit 2 again to append more books to the end of the list
     On next menu print some books using print book info option
  - Try a book somewhere in the middle of the list. Make sure info is as expected
  
  5. Start program, initialize list by selecting 1
+    Hit 2 to append books to the end of the list
     On next menu print some books using print book info option
     Hit 2 to append more books to the end of the list
  - Try a book at the beginning of the list. Make sure info is as expected
  
  6. Start program, initialize list by selecting 1
     On next menu print some books using print book info option
+    Hit 2 to append some books to list
     Hit 2 to append more books to the end of the list
  - Try a book at the end of the list. Make sure info is as expected
  
@@ -808,11 +837,15 @@ int GetUserFileOption(const char* fileName) {
  --- Test DeleteLinkedList() ---
  1. Run program. Hit 1 to initialize the list.
     Hit 1 the second time the menu pops up to delete the list.
- - Add breakpoint in menu and make sure that HEADER has pHead = NULL and numBooks = 0, meaning the list was deleted.
+ - Add breakpoint in menu and make sure that HEADER has pHead = NULL, pLast = NULL, listInitialized = 0, and numBooks = 0, meaning the list was deleted.
  
- 2. Run program. Hit 2 to append more data to list.
+ 2. Run program. Hit 1 to initialize list, Hit 2 to append data to list.
     Hit 1 the next time the menu pops up to delete the list.
- - Add breakpoint in menu and make sure that HEADER has pHead = NULL and numBooks = 0, meaning the list was deleted.
+ - Add breakpoint in menu and make sure that HEADER has pHead = NULL, pLast = NULL, listInitialized = 0, and numBooks = 0, meaning the list was deleted.
+ 
+ 3. Run program. Hit 1 to initialize list, Hit 2 to append data to list. Hit 2 to append more data to list
+    Hit 1 the next time the menu pops up to delete the list.
+ - Add breakpoint in menu and make sure that HEADER has pHead = NULL, pLast = NULL, listInitialized = 0, and numBooks = 0, meaning the list was deleted.
  
  
  --- Test GetBookIdFromUser() ---
