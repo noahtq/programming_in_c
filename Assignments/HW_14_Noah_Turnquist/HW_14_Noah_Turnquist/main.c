@@ -12,6 +12,8 @@
 #define DEFAULTFILEPATH "/Users/noahturnquist/Documents/College/Spring_2024/Programming_in_C/Assignments/HW_14_Noah_Turnquist/HW_14_Noah_Turnquist/"
 #define INPUTFILENAME "HW14DataMac.txt"
 #define MAXIDLENGTH 5
+#define DEFAULTFILENAME "default"
+#define MAXFILENAMESIZE 20
 
 typedef struct {
     int bookId;
@@ -27,10 +29,12 @@ typedef struct {
 
 typedef struct {
     NODE* pHead;
+    NODE* pLast;
     int numBooks;
 } HEADER;
 
 enum MENUOPTIONS { INITORDELETELIST = 1, APPEND, WRITETOBINARY, PRINTBOOK, EXIT };
+enum FILEOPTIONS { OVERWRITE = 1, RENAME, ABORT };
 
 int GetMenuOptionFromUser(HEADER list);
 HEADER InitializeOrDeleteLinkedList(HEADER list);
@@ -44,6 +48,11 @@ void DestroyNewlinesAndCarriageReturns(FILE* fp);
 void PrintBookById(HEADER list);
 int GetBookIdFromUser(HEADER list);
 void PrintBookInfo(BOOK bookNode);
+void WriteListToBinaryFile(HEADER list);
+FILE* OpenWrBinaryFile(char* fullFileName, int fullFilePathSize, char* fileName);
+void GetFileNameFromUser(char* fileName);
+int CheckFileExists(const char* filepath);
+int GetUserFileOption(const char* fileName);
 
 int main(void) {
     int userChoice;
@@ -60,6 +69,9 @@ int main(void) {
             case APPEND:
                 list = AppendLinkedList(INPUTFILENAME, list);
                 break;
+            case WRITETOBINARY:
+                WriteListToBinaryFile(list);
+                break;
             case PRINTBOOK:
                 PrintBookById(list);
                 break;
@@ -67,8 +79,9 @@ int main(void) {
                 printf("Exiting program.\n");
                 break;
         }
-        
     } while(userChoice != EXIT);
+    
+    DeleteLinkedList(list);
     
     return 0;
 }
@@ -132,7 +145,7 @@ HEADER DeleteLinkedList(HEADER list) {
         pCur = pNext;
     }
     
-    HEADER newHeader = { NULL, 0 };
+    HEADER newHeader = { NULL, NULL, 0 };
     return newHeader;
 }
 
@@ -142,7 +155,7 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
     BOOK tempBook;
     int bookId = list.numBooks;
     NODE* pHead = list.pHead;
-    NODE* pPrev = list.pHead;
+    NODE* pPrev = list.pLast;
     NODE* pNew;
     
     if ((fp = OpenFileInReadMode(fileName)) == NULL) {
@@ -158,10 +171,11 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
                 pNew = (NODE*) malloc(sizeof(NODE));
                 if (pNew) {
                     pNew->data = tempBook;
-                    if (pPrev == NULL) {
+                    if (pHead == NULL) {
                         pHead = pNew;
-                    } else {
-                        pNew->link = NULL;
+                    }
+                    pNew->link = NULL;
+                    if (pPrev != NULL) {
                         pPrev->link = pNew;
                     }
                     pPrev = pNew;
@@ -177,7 +191,10 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
         
         newHeader.pHead = pHead;
         newHeader.numBooks = bookId;
+        newHeader.pLast = pPrev;
     }
+    
+    fclose(fp);
     
     return newHeader;
 }
@@ -237,6 +254,7 @@ BOOK GetBookFromFile(FILE* fp, int bookId) {
     strncpy(tempBook.title, title, MAXTITLE);
     strncpy(tempBook.author, author, MAXAUTHOR);
     strncpy(tempBook.published, published, MAXYEAR);
+    tempBook.published[MAXYEAR] = '\0';
     
     return tempBook;
 }
@@ -330,6 +348,349 @@ void PrintBookInfo(BOOK bookNode) {
     printf("Year published: %s\n", bookNode.published);
     putchar('\n');
 }
+
+void WriteListToBinaryFile(HEADER list) {
+    FILE* fp;
+    int fileLength = strlen(DEFAULTFILEPATH) + MAXFILENAMESIZE;
+    char fileName[MAXFILENAMESIZE + 1];
+    char fullFilePath[fileLength + 1];
+    NODE* pWalker = list.pHead;
+    
+    if((fp = OpenWrBinaryFile(fullFilePath, fileLength, fileName)) == NULL) {
+        printf("Error opening file for writing.\n");
+    } else {
+        printf("Successfully opened file.\n");
+        
+        while (pWalker != NULL) {
+            if (fwrite(&(pWalker->data), sizeof(BOOK), 1, fp) != 1) {
+                printf("Error couldn't write node.\n");
+            } else {
+                printf("Successfully wrote book %s to file %s\n", pWalker->data.title, fileName);
+            }
+            pWalker = pWalker->link;
+        }
+    }
+    
+    fclose(fp);
+    putchar('\n');
+}
+
+FILE* OpenWrBinaryFile(char* fullFileName, int fullFilePathSize, char* fileName) {
+    /*
+     Prompt the user for the name of a file. Also give option to use default filename.
+     Append filename to filepath. If file doesn't exist or
+     file should be overwritten, open in write binary mode and return pointer to that file.
+     If file does exist, have user select an option for how to proceed.
+     If user chooses to abort, return NULL pointer.
+     */
+    
+    int fileOption = -1;
+    int fileExists;
+    FILE* fPt;
+    
+    do {
+        GetFileNameFromUser(fileName);
+        AppendFileNameToFilePath(fileName, DEFAULTFILEPATH, fullFileName, fullFilePathSize);
+        if ((fileExists = CheckFileExists(fullFileName)) == 1) {
+            fileOption = GetUserFileOption(fileName);
+        }
+    } while(fileExists && fileOption == RENAME);
+    
+    if (fileExists == 0 || fileOption == OVERWRITE) {
+        fPt = fopen(fullFileName, "wb");
+    } else {
+        fPt = NULL;
+    }
+    return fPt;
+}
+
+void GetFileNameFromUser(char* fileName) {
+    /*
+     Read in a filename from the user or use default filename if no name
+     is provided.
+     */
+    
+    printf("The default file name is: %s\n", DEFAULTFILENAME);
+    printf("Enter a file name up to %d chars: ", MAXFILENAMESIZE);
+    fgets(fileName, MAXFILENAMESIZE, stdin);
+    if (fileName[0] == '\n') {
+        strncpy(fileName, DEFAULTFILENAME, MAXFILENAMESIZE);
+    }
+    else if (!strchr(fileName, '\n')) {
+        FLUSH;
+    } else {
+        *strchr(fileName, '\n') = '\0';
+    }
+}
+
+int CheckFileExists(const char* filepath) {
+    /*
+     Check if file at filepath exists. If does exist return 1, otherwise
+     return 0.
+     */
+    
+    FILE* fCheck;
+    int fileExists;
+    if ((fCheck = fopen(filepath, "r")) != NULL) {
+        fileExists = 1;
+    } else {
+        fileExists = 0;
+    }
+    fclose(fCheck);
+    return fileExists;
+}
+
+int GetUserFileOption(const char* fileName) {
+    /*
+     Prompt the user to select one of the given file options: Overwrite, rename, or abort.
+     Ensure user enters appropriate option and return their option.
+     */
+    
+    int fileOption;
+    int validEntry = 0;
+    
+    do {
+        printf("File %s exists. Do you want to:\n", fileName);
+        printf("\tOverwrite the file (%d),\n", OVERWRITE);
+        printf("\tChange the filename (%d),\n", RENAME);
+        printf("\tOr abort (%d)\n", ABORT);
+        printf("Enter a number: ");
+        if (scanf(" %d", &fileOption) == 1) {
+            if (fileOption >= OVERWRITE && fileOption <= ABORT) {
+                validEntry = 1;
+            } else {
+                printf("Please enter a valid number from the list of options.\n");
+            }
+        } else {
+            printf("Please enter a number.\n");
+        }
+        FLUSH;
+    } while (validEntry == 0);
+    
+    return fileOption;
+}
+
+
+//HW #14, Noah Turnquist
+//Please select one of the options by entering the cooresponding number.
+//Initialize the list: (1)
+//Exit the program: (5)
+//1
+//
+//Initialized list.
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from file to the list: (2)
+//Write the list out to a binary file: (3)
+//Get info on a book: (4)
+//Exit the program: (5)
+//4
+//
+//Enter the id for a book whose info you would like printed.
+//Valid id's range from 0 to 14.5
+//
+//5
+//
+//Found book at ID #5
+//Title: A Soldier's Duty
+//Author: Johnson, Jean
+//Year published: 2011
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from file to the list: (2)
+//Write the list out to a binary file: (3)
+//Get info on a book: (4)
+//Exit the program: (5)
+//4
+//
+//Enter the id for a book whose info you would like printed.
+//Valid id's range from 0 to 14.
+//0
+//
+//Found book at ID #0
+//Title: On Basilisk Station
+//Author: Weber, David
+//Year published: 1993
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from file to the list: (2)
+//Write the list out to a binary file: (3)
+//Get info on a book: (4)
+//Exit the program: (5)
+//4
+//
+//Enter the id for a book whose info you would like printed.
+//Valid id's range from 0 to 14.
+//14
+//
+//Found book at ID #14
+//Title: C Primer Plus
+//Author: Prata, Stephen
+//Year published: 2014
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from file to the list: (2)
+//Write the list out to a binary file: (3)
+//Get info on a book: (4)
+//Exit the program: (5)
+//2
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from file to the list: (2)
+//Write the list out to a binary file: (3)
+//Get info on a book: (4)
+//Exit the program: (5)
+//4
+//
+//Enter the id for a book whose info you would like printed.
+//Valid id's range from 0 to 29.
+//0
+//
+//Found book at ID #0
+//Title: On Basilisk Station
+//Author: Weber, David
+//Year published: 1993
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from file to the list: (2)
+//Write the list out to a binary file: (3)
+//Get info on a book: (4)
+//Exit the program: (5)
+//4
+//
+//Enter the id for a book whose info you would like printed.
+//Valid id's range from 0 to 29.
+//15
+//
+//Found book at ID #15
+//Title: On Basilisk Station
+//Author: Weber, David
+//Year published: 1993
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from file to the list: (2)
+//Write the list out to a binary file: (3)
+//Get info on a book: (4)
+//Exit the program: (5)
+//4
+//
+//Enter the id for a book whose info you would like printed.
+//Valid id's range from 0 to 29.
+//29
+//
+//Found book at ID #29
+//Title: C Primer Plus
+//Author: Prata, Stephen
+//Year published: 2014
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from file to the list: (2)
+//Write the list out to a binary file: (3)
+//Get info on a book: (4)
+//Exit the program: (5)
+//4
+//
+//Enter the id for a book whose info you would like printed.
+//Valid id's range from 0 to 29.2
+//27
+//
+//Please enter a valid ID.
+//Enter the id for a book whose info you would like printed.
+//Valid id's range from 0 to 29.
+//27
+//
+//Found book at ID #27
+//Title: I, Robot
+//Author: Asimov, Issac
+//Year published: 1950
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from file to the list: (2)
+//Write the list out to a binary file: (3)
+//Get info on a book: (4)
+//Exit the program: (5)
+//3
+//
+//The default file name is: default
+//Enter a file name up to 20 chars:
+//File default exists. Do you want to:
+//    Overwrite the file (1),
+//    Change the filename (2),
+//    Or abort (3)
+//Enter a number: 1
+//Successfully opened file.
+//Successfully wrote book On Basilisk Station to file default
+//Successfully wrote book The Sum of All Fears to file default
+//Successfully wrote book Battle Born to file default
+//Successfully wrote book Between Planets to file default
+//Successfully wrote book Stranger in a Strange Land to file default
+//Successfully wrote book A Soldier's Duty to file default
+//Successfully wrote book Swords Against Wizardry to file default
+//Successfully wrote book The Mote in God's Eye to file default
+//Successfully wrote book Uncharted Stars to file default
+//Successfully wrote book Raising Steam to file default
+//Successfully wrote book Ender's Game to file default
+//Successfully wrote book Foundation and Empire to file default
+//Successfully wrote book I, Robot to file default
+//Successfully wrote book The Hitchiker's guide to the Universe to file default
+//Successfully wrote book C Primer Plus to file default
+//Successfully wrote book On Basilisk Station to file default
+//Successfully wrote book The Sum of All Fears to file default
+//Successfully wrote book Battle Born to file default
+//Successfully wrote book Between Planets to file default
+//Successfully wrote book Stranger in a Strange Land to file default
+//Successfully wrote book A Soldier's Duty to file default
+//Successfully wrote book Swords Against Wizardry to file default
+//Successfully wrote book The Mote in God's Eye to file default
+//Successfully wrote book Uncharted Stars to file default
+//Successfully wrote book Raising Steam to file default
+//Successfully wrote book Ender's Game to file default
+//Successfully wrote book Foundation and Empire to file default
+//Successfully wrote book I, Robot to file default
+//Successfully wrote book The Hitchiker's guide to the Universe to file default
+//Successfully wrote book C Primer Plus to file default
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from file to the list: (2)
+//Write the list out to a binary file: (3)
+//Get info on a book: (4)
+//Exit the program: (5)
+//1
+//
+//Deleted list.
+//Please select one of the options by entering the cooresponding number.
+//Initialize the list: (1)
+//Exit the program: (5)
+//1
+//
+//Initialized list.
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from file to the list: (2)
+//Write the list out to a binary file: (3)
+//Get info on a book: (4)
+//Exit the program: (5)
+//2
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from file to the list: (2)
+//Write the list out to a binary file: (3)
+//Get info on a book: (4)
+//Exit the program: (5)
+//5
+//
+//Exiting program.
+//Program ended with exit code: 0
 
 
 /*
@@ -488,5 +849,22 @@ void PrintBookInfo(BOOK bookNode) {
     Hit 4 to get book info.
  - Enter a id that's valid followed by invalid characters, '5adwadw'.
  - Should print error message and ask you to try again.
+ 
+ 
+ --- Test WriteListToBinaryFile() ---
+ * All user input behavior doesn't need to be tested since those functions were stolen
+ from HW13 and were fully tested in that assignment. *
+ 
+ 1. Run program. Hit 1 to initialize list.
+    Hit 3 to output list. Use any filename desired.
+ - Should see 15 books being written out, starting with 'On Basilisk Station' and ending with 'C Primer Plus'
+ - Look at file and make sure contents look roughly correct.
+ 
+ 2. Run program. Hit 1 to initialize list.
+    Hit 2 to append more data to end of list.
+    Hit 3 to output list. Use any filename desired.
+ - Should see 30 books being written out, starting with 'On Basilisk Station' and ending with 'C Primer Plus'
+ - Should be two identical lists one after another.
+ - Look at file and make sure contents look roughly correct.
  
  */
