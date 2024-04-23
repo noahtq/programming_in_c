@@ -40,10 +40,12 @@ enum FILEOPTIONS { OVERWRITE = 1, RENAME, ABORT };
 int GetMenuOptionFromUser(HEADER list);
 HEADER InitializeOrDeleteLinkedList(HEADER list);
 HEADER DeleteLinkedList(HEADER list);
-HEADER AppendLinkedList(char* fileName, HEADER list);
+HEADER AppendLinkedList(HEADER list, FILE* fp, int binaryFile);
+HEADER AppendLinkedListFromDefaultFile(char* fileName, HEADER list);
 FILE* OpenFileInReadMode(char* fileName);
 void AppendFileNameToFilePath(const char* fileName, const char* filepath, char* fullPath, int stringLength);
 BOOK GetBookFromFile(FILE* fp, int bookId);
+BOOK GetBookFromBinaryFile(FILE* fp, int bookId);
 int FileToStringWithoutNewline(FILE* fp, char* str, int maxChars);
 void DestroyNewlinesAndCarriageReturns(FILE* fp);
 void PrintBookById(HEADER list);
@@ -68,7 +70,7 @@ int main(void) {
                 list = InitializeOrDeleteLinkedList(list);
                 break;
             case APPEND:
-                list = AppendLinkedList(INPUTFILENAME, list);
+                list = AppendLinkedListFromDefaultFile(INPUTFILENAME, list);
                 break;
             case WRITETOBINARY:
                 WriteListToBinaryFile(list);
@@ -172,7 +174,62 @@ HEADER DeleteLinkedList(HEADER list) {
     return newHeader;
 }
 
-HEADER AppendLinkedList(char* fileName, HEADER list) {
+HEADER AppendLinkedList(HEADER list, FILE* fp, int binaryFile) {
+    /*
+     Grab all books in format (Title, Author, Year Published)
+     from file in file pointer. Append to the end of the linked list "list".
+     binaryFile indicates if reading from a binary file or not.
+     */
+    
+    HEADER newHeader;
+    BOOK tempBook;
+    int bookId = list.numBooks;
+    NODE* pHead = list.pHead;
+    NODE* pPrev = list.pLast;
+    NODE* pNew;
+    while (!feof(fp)) {
+        if (binaryFile) {
+            tempBook = GetBookFromBinaryFile(fp, bookId);
+        } else {
+            tempBook = GetBookFromFile(fp, bookId);
+        }
+        if (tempBook.bookId == -1) {
+            printf("Error reading book.\n");
+        } else {
+            pNew = (NODE*) malloc(sizeof(NODE));
+            if (pNew) {
+                pNew->data = tempBook;
+                if (pHead == NULL) {
+                    pHead = pNew;
+                }
+                pNew->link = NULL;
+                if (pPrev != NULL) {
+                    pPrev->link = pNew;
+                }
+                pPrev = pNew;
+                bookId++;
+            } else {
+                printf("Error couldn't allocate memory for node.\n");
+            }
+        }
+        
+        if (!binaryFile) {
+            //Don't try to keep reading if there's extra newlines at the end of a line or the file
+            DestroyNewlinesAndCarriageReturns(fp);
+        }
+    }
+    
+    newHeader.pHead = pHead;
+    newHeader.numBooks = bookId;
+    newHeader.pLast = pPrev;
+    newHeader.listInitialized = list.listInitialized;
+    
+    printf("Appended %d books to linked list.\n\n", newHeader.numBooks - list.numBooks);
+    
+    return newHeader;
+}
+
+HEADER AppendLinkedListFromDefaultFile(char* fileName, HEADER list) {
     /*
      Grab all books in format (Title, Author, Year Published)
      from file at fileName. Append to the end of the linked list "list".
@@ -191,38 +248,8 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
         newHeader.pHead = NULL;
         newHeader.numBooks = 0;
     } else {
-        while (!feof(fp)) {
-            tempBook = GetBookFromFile(fp, bookId);
-            if (tempBook.bookId == -1) {
-                printf("Error reading book.\n");
-            } else {
-                pNew = (NODE*) malloc(sizeof(NODE));
-                if (pNew) {
-                    pNew->data = tempBook;
-                    if (pHead == NULL) {
-                        pHead = pNew;
-                    }
-                    pNew->link = NULL;
-                    if (pPrev != NULL) {
-                        pPrev->link = pNew;
-                    }
-                    pPrev = pNew;
-                    bookId++;
-                } else {
-                    printf("Error couldn't allocate memory for node.\n");
-                }
-            }
-            
-            //Don't try to keep reading if there's extra newlines at the end of a line or the file
-            DestroyNewlinesAndCarriageReturns(fp);
-        }
-        
-        newHeader.pHead = pHead;
-        newHeader.numBooks = bookId;
-        newHeader.pLast = pPrev;
-        newHeader.listInitialized = list.listInitialized;
+        newHeader = AppendLinkedList(list, fp, 0);
     }
-    printf("Appended %d books to linked list.\n\n", newHeader.numBooks - list.numBooks);
     
     fclose(fp);
     
@@ -295,6 +322,11 @@ BOOK GetBookFromFile(FILE* fp, int bookId) {
     strncpy(tempBook.published, published, MAXYEAR);
     
     return tempBook;
+}
+
+BOOK GetBookFromBinaryFile(FILE* fp, int bookId) {
+    BOOK b;
+    return b;
 }
 
 int FileToStringWithoutNewline(FILE* fp, char* str, int maxChars) {
