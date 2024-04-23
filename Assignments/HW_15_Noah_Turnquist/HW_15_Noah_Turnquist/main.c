@@ -34,7 +34,15 @@ typedef struct {
     int listInitialized;
 } HEADER;
 
-enum MENUOPTIONS { INITORDELETELIST = 1, APPEND, WRITETOBINARY, PRINTBOOK, EXIT };
+enum MENUOPTIONS {
+    INITORDELETELIST = 1,
+    APPEND,
+    APPENDFROMBINARY,
+    WRITETOBINARY,
+    PRINTBOOK,
+    EXIT
+};
+
 enum FILEOPTIONS { OVERWRITE = 1, RENAME, ABORT };
 
 int GetMenuOptionFromUser(HEADER list);
@@ -42,6 +50,8 @@ HEADER InitializeOrDeleteLinkedList(HEADER list);
 HEADER DeleteLinkedList(HEADER list);
 HEADER AppendLinkedList(HEADER list, FILE* fp, int binaryFile);
 HEADER AppendLinkedListFromDefaultFile(char* fileName, HEADER list);
+HEADER AppendLinkedListFromUserBinaryFile(HEADER list);
+FILE* OpenReadBinaryFile(void);
 FILE* OpenFileInReadMode(char* fileName);
 void AppendFileNameToFilePath(const char* fileName, const char* filepath, char* fullPath, int stringLength);
 BOOK GetBookFromFile(FILE* fp, int bookId);
@@ -71,6 +81,9 @@ int main(void) {
                 break;
             case APPEND:
                 list = AppendLinkedListFromDefaultFile(INPUTFILENAME, list);
+                break;
+            case APPENDFROMBINARY:
+                list = AppendLinkedListFromUserBinaryFile(list);
                 break;
             case WRITETOBINARY:
                 WriteListToBinaryFile(list);
@@ -107,7 +120,8 @@ int GetMenuOptionFromUser(HEADER list) {
             printf("Initialize the list: (%d)\n", INITORDELETELIST);
         } else {
             printf("Delete the list: (%d)\n", INITORDELETELIST);
-            printf("Append data from file to the list: (%d)\n", APPEND);
+            printf("Append data from default file to the list: (%d)\n", APPEND);
+            printf("Append data from binary file to the list: (%d)\n", APPENDFROMBINARY);
             if (list.pHead) {
                 printf("Write the list out to a binary file: (%d)\n", WRITETOBINARY);
                 printf("Get info on a book: (%d)\n", PRINTBOOK);
@@ -119,7 +133,7 @@ int GetMenuOptionFromUser(HEADER list) {
             userChoice = chUserChoice - '0';
             if (list.listInitialized == 0 && (userChoice == INITORDELETELIST || userChoice == EXIT)) {
                 validSelection = 1;
-            } else if (list.listInitialized == 1 && list.pHead == NULL && (userChoice == INITORDELETELIST || userChoice == APPEND || userChoice == EXIT)) {
+            } else if (list.listInitialized == 1 && list.pHead == NULL && ((userChoice >= INITORDELETELIST && userChoice <= APPENDFROMBINARY) || userChoice == EXIT)) {
                 validSelection = 1;
             } else if (list.pHead && list.listInitialized && (userChoice >= INITORDELETELIST && userChoice <= EXIT)) {
                 validSelection = 1;
@@ -237,11 +251,6 @@ HEADER AppendLinkedListFromDefaultFile(char* fileName, HEADER list) {
     
     FILE* fp;
     HEADER newHeader;
-    BOOK tempBook;
-    int bookId = list.numBooks;
-    NODE* pHead = list.pHead;
-    NODE* pPrev = list.pLast;
-    NODE* pNew;
     
     if ((fp = OpenFileInReadMode(fileName)) == NULL) {
         printf("Error. Couldn't open file.\n");
@@ -254,6 +263,46 @@ HEADER AppendLinkedListFromDefaultFile(char* fileName, HEADER list) {
     fclose(fp);
     
     return newHeader;
+}
+
+HEADER AppendLinkedListFromUserBinaryFile(HEADER list) {
+    FILE* fp;
+    HEADER newHeader;
+    
+    fp = OpenReadBinaryFile();
+    if (fp == NULL) {
+        newHeader = list;
+        printf("Couldn't open file.\n");
+        return newHeader;
+    }
+    
+    newHeader = AppendLinkedList(list, fp, 1);
+    
+    return newHeader;
+}
+
+FILE* OpenReadBinaryFile(void) {
+    /*
+     Attempt to open a file in read binary mode and return a pointer to that
+     file stream.
+     User is prompted for filename and given several options if file already
+     exists. There is also an option to use a default filename.
+     */
+    
+    FILE* fp;
+    char fileName[MAXFILENAMESIZE];
+    int fullFilePathSize = strlen(DEFAULTFILEPATH) + MAXFILENAMESIZE;
+    char fullFileName[fullFilePathSize + 1];
+    
+    do {
+        GetFileNameFromUser(fileName);
+        AppendFileNameToFilePath(fileName, DEFAULTFILEPATH, fullFileName, fullFilePathSize);
+        if ((fp = fopen(fullFileName, "rb")) == NULL) {
+            printf("Couldn't find file. Try again.\n");
+        }
+    } while(fp == NULL);
+    
+    return fp;
 }
 
 FILE* OpenFileInReadMode(char* fileName) {
@@ -325,8 +374,16 @@ BOOK GetBookFromFile(FILE* fp, int bookId) {
 }
 
 BOOK GetBookFromBinaryFile(FILE* fp, int bookId) {
-    BOOK b;
-    return b;
+    BOOK tempBook;
+    
+    if (fread(&tempBook, sizeof(BOOK), 1, fp) != 1) {
+        printf("Error reading book\n");
+        //In case ID was overwritten by fRead. Make sure
+        //book ID is -1 so that we can handle error in return function.
+        tempBook.bookId = -1;
+        return tempBook;
+    }
+    return tempBook;
 }
 
 int FileToStringWithoutNewline(FILE* fp, char* str, int maxChars) {
