@@ -9,7 +9,7 @@
 #define MAXTITLE 50
 #define MAXAUTHOR 50
 #define MAXYEAR 4
-#define DEFAULTFILEPATH "/Users/noahturnquist/Documents/College/Spring_2024/Programming_in_C/Assignments/HW_14_Noah_Turnquist/HW_14_Noah_Turnquist/"
+#define DEFAULTFILEPATH "/Users/noahturnquist/Documents/College/Spring_2024/Programming_in_C/Assignments/HW_15_Noah_Turnquist/HW_15_Noah_Turnquist/"
 #define INPUTFILENAME "HW14Data.txt"
 #define MAXIDLENGTH 5
 #define DEFAULTFILENAME "default"
@@ -275,7 +275,7 @@ HEADER AppendLinkedListFromUserBinaryFile(HEADER list) {
         printf("Couldn't open file.\n");
         return newHeader;
     }
-    
+        
     newHeader = AppendLinkedList(list, fp, 1);
     
     return newHeader;
@@ -377,12 +377,13 @@ BOOK GetBookFromBinaryFile(FILE* fp, int bookId) {
     BOOK tempBook;
     
     if (fread(&tempBook, sizeof(BOOK), 1, fp) != 1) {
-        printf("Error reading book\n");
+        printf("Error reading book from binary file\n");
         //In case ID was overwritten by fRead. Make sure
         //book ID is -1 so that we can handle error in return function.
         tempBook.bookId = -1;
         return tempBook;
     }
+    tempBook.bookId = bookId;
     return tempBook;
 }
 
