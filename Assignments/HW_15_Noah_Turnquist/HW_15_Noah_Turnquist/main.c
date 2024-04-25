@@ -40,6 +40,7 @@ enum MENUOPTIONS {
     APPENDFROMBINARY,
     WRITETOBINARY,
     PRINTBOOK,
+    SORTLIST,
     EXIT
 };
 
@@ -66,6 +67,7 @@ FILE* OpenWrBinaryFile(char* fullFileName, int fullFilePathSize, char* fileName)
 void GetFileNameFromUser(char* fileName);
 int CheckFileExists(const char* filepath);
 int GetUserFileOption(const char* fileName);
+HEADER LinkedListSelectionSort(HEADER list);
 
 int main(void) {
     int userChoice;
@@ -91,6 +93,8 @@ int main(void) {
             case PRINTBOOK:
                 PrintBookById(list);
                 break;
+            case SORTLIST:
+                list = LinkedListSelectionSort(list);
             case EXIT:
                 printf("Exiting program.\n");
                 break;
@@ -125,6 +129,7 @@ int GetMenuOptionFromUser(HEADER list) {
             if (list.pHead) {
                 printf("Write the list out to a binary file: (%d)\n", WRITETOBINARY);
                 printf("Get info on a book: (%d)\n", PRINTBOOK);
+                printf("Sort the list using selection sort: (%d)\n", SORTLIST);
             }
         }
         printf("Exit the program: (%d)\n", EXIT);
@@ -637,6 +642,52 @@ int GetUserFileOption(const char* fileName) {
     } while (validEntry == 0);
     
     return fileOption;
+}
+
+HEADER LinkedListSelectionSort(HEADER list) {
+    HEADER newHeader;
+    int count = 0;
+    NODE* pCur = list.pHead;
+    NODE* pPrev = NULL;
+    while(pCur != NULL) {
+        NODE* pMin = pCur;
+        NODE* pMinPrev = pPrev;
+        NODE* pWalkerPrev = pCur;
+        NODE* pWalker = pCur->link;
+        while (pWalker != NULL) {
+            if (strncmp(pMin->data.author, pWalker->data.author, MAXAUTHOR) > 0) { //TODO: Change to case insensitive string compare
+                pMinPrev = pWalkerPrev;
+                pMin = pWalker;
+            }
+            pWalker = pWalker->link;
+        }
+        //Update bookId to be correct for new position.
+        pMin->data.bookId = count;
+        
+        //Swap all node connections i.e. swap places of nodes in linked list
+        NODE* tempLink = pMin->link;
+        pMin->link = pCur->link;
+        pCur->link = tempLink;
+        pMinPrev->link = pCur;
+        if (pPrev != NULL) {
+            pPrev->link = pMin;
+        }
+        
+        if (count == 0) {
+            newHeader.pHead = pCur;
+        }
+        if (pCur->link == NULL) {
+            newHeader.pLast = pCur;
+        }
+        
+        pPrev = pCur;
+        pCur = pCur->link;
+        count++;
+    }
+    newHeader.numBooks = count;
+    newHeader.listInitialized = list.listInitialized;
+    
+    return newHeader;
 }
 
 
