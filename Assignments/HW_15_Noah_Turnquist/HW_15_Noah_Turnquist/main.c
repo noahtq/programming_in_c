@@ -207,9 +207,7 @@ HEADER AppendLinkedList(HEADER list, FILE* fp, int binaryFile) {
         } else {
             tempBook = GetBookFromFile(fp, bookId);
         }
-        if (tempBook.bookId == -1) {
-            printf("Error reading book.\n");
-        } else {
+        if (tempBook.bookId != -1) {
             pNew = (NODE*) malloc(sizeof(NODE));
             if (pNew) {
                 pNew->data = tempBook;
@@ -275,7 +273,7 @@ HEADER AppendLinkedListFromUserBinaryFile(HEADER list) {
         printf("Couldn't open file.\n");
         return newHeader;
     }
-        
+    putchar('\n');
     newHeader = AppendLinkedList(list, fp, 1);
     
     return newHeader;
@@ -289,18 +287,20 @@ FILE* OpenReadBinaryFile(void) {
      exists. There is also an option to use a default filename.
      */
     
-    FILE* fp;
+    FILE* fp = NULL;
     char fileName[MAXFILENAMESIZE];
     int fullFilePathSize = strlen(DEFAULTFILEPATH) + MAXFILENAMESIZE;
     char fullFileName[fullFilePathSize + 1];
     
     do {
         GetFileNameFromUser(fileName);
-        AppendFileNameToFilePath(fileName, DEFAULTFILEPATH, fullFileName, fullFilePathSize);
-        if ((fp = fopen(fullFileName, "rb")) == NULL) {
-            printf("Couldn't find file. Try again.\n");
-        }
-    } while(fp == NULL);
+        if (fileName[0] != 'q') {
+            AppendFileNameToFilePath(fileName, DEFAULTFILEPATH, fullFileName, fullFilePathSize);
+            if ((fp = fopen(fullFileName, "rb")) == NULL) {
+                printf("Couldn't find file. Try again.\n");
+            }
+        } 
+    } while(fp == NULL && fileName[0] != 'q');
     
     return fp;
 }
@@ -377,7 +377,6 @@ BOOK GetBookFromBinaryFile(FILE* fp, int bookId) {
     BOOK tempBook;
     
     if (fread(&tempBook, sizeof(BOOK), 1, fp) != 1) {
-        printf("Error reading book from binary file\n");
         //In case ID was overwritten by fRead. Make sure
         //book ID is -1 so that we can handle error in return function.
         tempBook.bookId = -1;
@@ -552,16 +551,18 @@ FILE* OpenWrBinaryFile(char* fullFileName, int fullFilePathSize, char* fileName)
      */
     
     int fileOption = -1;
-    int fileExists;
+    int fileExists = 0;
     FILE* fPt;
     
     do {
         GetFileNameFromUser(fileName);
-        AppendFileNameToFilePath(fileName, DEFAULTFILEPATH, fullFileName, fullFilePathSize);
-        if ((fileExists = CheckFileExists(fullFileName)) == 1) {
-            fileOption = GetUserFileOption(fileName);
+        if (fileName[0] != 'q') {
+            AppendFileNameToFilePath(fileName, DEFAULTFILEPATH, fullFileName, fullFilePathSize);
+            if ((fileExists = CheckFileExists(fullFileName)) == 1) {
+                fileOption = GetUserFileOption(fileName);
+            }
         }
-    } while(fileExists && fileOption == RENAME);
+    } while(fileExists && fileOption == RENAME && fileName[0] != 'q');
     
     if (fileExists == 0 || fileOption == OVERWRITE) {
         fPt = fopen(fullFileName, "wb");
@@ -578,6 +579,7 @@ void GetFileNameFromUser(char* fileName) {
      */
     
     printf("The default file name is: %s\n", DEFAULTFILENAME);
+    printf("Enter 'q' to abort.\n");
     printf("Enter a file name up to %d chars: ", MAXFILENAMESIZE);
     fgets(fileName, MAXFILENAMESIZE, stdin);
     if (fileName[0] == '\n') {
