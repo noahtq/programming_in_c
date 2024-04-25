@@ -40,6 +40,7 @@ enum MENUOPTIONS {
     APPENDFROMBINARY,
     WRITETOBINARY,
     PRINTBOOK,
+    PRINTALLBOOKS,
     SORTLIST,
     EXIT
 };
@@ -49,6 +50,7 @@ enum FILEOPTIONS { OVERWRITE = 1, RENAME, ABORT };
 int GetMenuOptionFromUser(HEADER list);
 HEADER InitializeOrDeleteLinkedList(HEADER list);
 HEADER DeleteLinkedList(HEADER list);
+void PrintAllBooks(HEADER list);
 HEADER AppendLinkedList(HEADER list, FILE* fp, int binaryFile);
 HEADER AppendLinkedListFromDefaultFile(char* fileName, HEADER list);
 HEADER AppendLinkedListFromUserBinaryFile(HEADER list);
@@ -67,7 +69,7 @@ FILE* OpenWrBinaryFile(char* fullFileName, int fullFilePathSize, char* fileName)
 void GetFileNameFromUser(char* fileName);
 int CheckFileExists(const char* filepath);
 int GetUserFileOption(const char* fileName);
-HEADER LinkedListSelectionSort(HEADER list);
+void LinkedListInsertionSort(HEADER* list);
 
 int main(void) {
     int userChoice;
@@ -93,8 +95,12 @@ int main(void) {
             case PRINTBOOK:
                 PrintBookById(list);
                 break;
+            case PRINTALLBOOKS:
+                PrintAllBooks(list);
+                break;
             case SORTLIST:
-                list = LinkedListSelectionSort(list);
+                LinkedListInsertionSort(&list);
+                break;
             case EXIT:
                 printf("Exiting program.\n");
                 break;
@@ -129,6 +135,7 @@ int GetMenuOptionFromUser(HEADER list) {
             if (list.pHead) {
                 printf("Write the list out to a binary file: (%d)\n", WRITETOBINARY);
                 printf("Get info on a book: (%d)\n", PRINTBOOK);
+                printf("Print all books in list: (%d)\n", PRINTALLBOOKS);
                 printf("Sort the list using selection sort: (%d)\n", SORTLIST);
             }
         }
@@ -172,6 +179,27 @@ HEADER InitializeOrDeleteLinkedList(HEADER list) {
     }
     
     return newHeader;
+}
+
+void PrintAllBooks(HEADER list) {
+    /*
+     Go through linked list and print data
+     of each book.
+     */
+    
+    NODE* pWalker = list.pHead;
+    
+    printf("%-5s %-50s %-50s %-4s\n", "ID", "Title", "Author", "Year");
+    printf("%-5s %-50s %-50s %-4s\n", "--", "-----", "------", "----");
+    while(pWalker != NULL) {
+        printf("%-5d %-50s %-50s (%4s)\n",
+               pWalker->data.bookId,
+               pWalker->data.title,
+               pWalker->data.author,
+               pWalker->data.published);
+        pWalker = pWalker->link;
+    }
+    putchar('\n');
 }
 
 HEADER DeleteLinkedList(HEADER list) {
@@ -644,50 +672,38 @@ int GetUserFileOption(const char* fileName) {
     return fileOption;
 }
 
-HEADER LinkedListSelectionSort(HEADER list) {
-    HEADER newHeader;
+void LinkedListInsertionSort(HEADER* list) {
+    /*
+     Sorting linked list using insertion sort
+     Using insertion sort over something like
+     selection sort since insertion sort is stable
+     allowing the book IDs to stay in the correct
+     order without having to mess with them manually.
+     */
+    
     int count = 0;
-    NODE* pCur = list.pHead;
-    NODE* pPrev = NULL;
+    NODE* pCur = list->pHead;
     while(pCur != NULL) {
         NODE* pMin = pCur;
-        NODE* pMinPrev = pPrev;
-        NODE* pWalkerPrev = pCur;
         NODE* pWalker = pCur->link;
         while (pWalker != NULL) {
             if (strncmp(pMin->data.author, pWalker->data.author, MAXAUTHOR) > 0) { //TODO: Change to case insensitive string compare
-                pMinPrev = pWalkerPrev;
                 pMin = pWalker;
             }
             pWalker = pWalker->link;
         }
-        //Update bookId to be correct for new position.
-        pMin->data.bookId = count;
         
         //Swap all node connections i.e. swap places of nodes in linked list
-        NODE* tempLink = pMin->link;
-        pMin->link = pCur->link;
-        pCur->link = tempLink;
-        pMinPrev->link = pCur;
-        if (pPrev != NULL) {
-            pPrev->link = pMin;
-        }
+        BOOK tempBook = pCur->data;
+        pCur->data = pMin->data;
+        pMin->data = tempBook;
+        pMin->data.bookId = count;
         
-        if (count == 0) {
-            newHeader.pHead = pCur;
-        }
-        if (pCur->link == NULL) {
-            newHeader.pLast = pCur;
-        }
-        
-        pPrev = pCur;
         pCur = pCur->link;
         count++;
     }
-    newHeader.numBooks = count;
-    newHeader.listInitialized = list.listInitialized;
     
-    return newHeader;
+    printf("Sorted list using selection sort.\n\n");
 }
 
 
