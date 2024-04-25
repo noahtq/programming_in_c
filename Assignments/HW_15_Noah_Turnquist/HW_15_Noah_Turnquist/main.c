@@ -9,7 +9,7 @@
 #define MAXTITLE 50
 #define MAXAUTHOR 50
 #define MAXYEAR 4
-#define DEFAULTFILEPATH "/Users/noahturnquist/Documents/College/Spring_2024/Programming_in_C/Assignments/HW_14_Noah_Turnquist/HW_14_Noah_Turnquist/"
+#define DEFAULTFILEPATH "/Users/noahturnquist/Documents/College/Spring_2024/Programming_in_C/Assignments/HW_15_Noah_Turnquist/HW_15_Noah_Turnquist/"
 #define INPUTFILENAME "HW14Data.txt"
 #define MAXIDLENGTH 5
 #define DEFAULTFILENAME "default"
@@ -34,16 +34,31 @@ typedef struct {
     int listInitialized;
 } HEADER;
 
-enum MENUOPTIONS { INITORDELETELIST = 1, APPEND, WRITETOBINARY, PRINTBOOK, EXIT };
+enum MENUOPTIONS {
+    INITORDELETELIST = 1,
+    APPEND,
+    APPENDFROMBINARY,
+    WRITETOBINARY,
+    PRINTBOOK,
+    PRINTALLBOOKS,
+    SORTLIST,
+    EXIT
+};
+
 enum FILEOPTIONS { OVERWRITE = 1, RENAME, ABORT };
 
 int GetMenuOptionFromUser(HEADER list);
 HEADER InitializeOrDeleteLinkedList(HEADER list);
 HEADER DeleteLinkedList(HEADER list);
-HEADER AppendLinkedList(char* fileName, HEADER list);
+void PrintAllBooks(HEADER list);
+HEADER AppendLinkedList(HEADER list, FILE* fp, int binaryFile);
+HEADER AppendLinkedListFromDefaultFile(char* fileName, HEADER list);
+HEADER AppendLinkedListFromUserBinaryFile(HEADER list);
+FILE* OpenReadBinaryFile(void);
 FILE* OpenFileInReadMode(char* fileName);
 void AppendFileNameToFilePath(const char* fileName, const char* filepath, char* fullPath, int stringLength);
 BOOK GetBookFromFile(FILE* fp, int bookId);
+BOOK GetBookFromBinaryFile(FILE* fp, int bookId);
 int FileToStringWithoutNewline(FILE* fp, char* str, int maxChars);
 void DestroyNewlinesAndCarriageReturns(FILE* fp);
 void PrintBookById(HEADER list);
@@ -54,6 +69,7 @@ FILE* OpenWrBinaryFile(char* fullFileName, int fullFilePathSize, char* fileName)
 void GetFileNameFromUser(char* fileName);
 int CheckFileExists(const char* filepath);
 int GetUserFileOption(const char* fileName);
+void LinkedListSelectionSort(HEADER* list);
 
 int main(void) {
     int userChoice;
@@ -68,13 +84,22 @@ int main(void) {
                 list = InitializeOrDeleteLinkedList(list);
                 break;
             case APPEND:
-                list = AppendLinkedList(INPUTFILENAME, list);
+                list = AppendLinkedListFromDefaultFile(INPUTFILENAME, list);
+                break;
+            case APPENDFROMBINARY:
+                list = AppendLinkedListFromUserBinaryFile(list);
                 break;
             case WRITETOBINARY:
                 WriteListToBinaryFile(list);
                 break;
             case PRINTBOOK:
                 PrintBookById(list);
+                break;
+            case PRINTALLBOOKS:
+                PrintAllBooks(list);
+                break;
+            case SORTLIST:
+                LinkedListSelectionSort(&list);
                 break;
             case EXIT:
                 printf("Exiting program.\n");
@@ -105,10 +130,13 @@ int GetMenuOptionFromUser(HEADER list) {
             printf("Initialize the list: (%d)\n", INITORDELETELIST);
         } else {
             printf("Delete the list: (%d)\n", INITORDELETELIST);
-            printf("Append data from file to the list: (%d)\n", APPEND);
+            printf("Append data from default file to the list: (%d)\n", APPEND);
+            printf("Append data from binary file to the list: (%d)\n", APPENDFROMBINARY);
             if (list.pHead) {
                 printf("Write the list out to a binary file: (%d)\n", WRITETOBINARY);
                 printf("Get info on a book: (%d)\n", PRINTBOOK);
+                printf("Print all books in list: (%d)\n", PRINTALLBOOKS);
+                printf("Sort the list using selection sort: (%d)\n", SORTLIST);
             }
         }
         printf("Exit the program: (%d)\n", EXIT);
@@ -117,7 +145,7 @@ int GetMenuOptionFromUser(HEADER list) {
             userChoice = chUserChoice - '0';
             if (list.listInitialized == 0 && (userChoice == INITORDELETELIST || userChoice == EXIT)) {
                 validSelection = 1;
-            } else if (list.listInitialized == 1 && list.pHead == NULL && (userChoice == INITORDELETELIST || userChoice == APPEND || userChoice == EXIT)) {
+            } else if (list.listInitialized == 1 && list.pHead == NULL && ((userChoice >= INITORDELETELIST && userChoice <= APPENDFROMBINARY) || userChoice == EXIT)) {
                 validSelection = 1;
             } else if (list.pHead && list.listInitialized && (userChoice >= INITORDELETELIST && userChoice <= EXIT)) {
                 validSelection = 1;
@@ -153,6 +181,27 @@ HEADER InitializeOrDeleteLinkedList(HEADER list) {
     return newHeader;
 }
 
+void PrintAllBooks(HEADER list) {
+    /*
+     Go through linked list and print data
+     of each book.
+     */
+    
+    NODE* pWalker = list.pHead;
+    
+    printf("%-5s %-50s %-50s %-4s\n", "ID", "Title", "Author", "Year");
+    printf("%-5s %-50s %-50s %-4s\n", "--", "-----", "------", "----");
+    while(pWalker != NULL) {
+        printf("%-5d %-50s %-50s (%4s)\n",
+               pWalker->data.bookId,
+               pWalker->data.title,
+               pWalker->data.author,
+               pWalker->data.published);
+        pWalker = pWalker->link;
+    }
+    putchar('\n');
+}
+
 HEADER DeleteLinkedList(HEADER list) {
     /*
      Go through linked list and deallocate memory
@@ -172,7 +221,60 @@ HEADER DeleteLinkedList(HEADER list) {
     return newHeader;
 }
 
-HEADER AppendLinkedList(char* fileName, HEADER list) {
+HEADER AppendLinkedList(HEADER list, FILE* fp, int binaryFile) {
+    /*
+     Grab all books in format (Title, Author, Year Published)
+     from file in file pointer. Append to the end of the linked list "list".
+     binaryFile indicates if reading from a binary file or not.
+     */
+    
+    HEADER newHeader;
+    BOOK tempBook;
+    int bookId = list.numBooks;
+    NODE* pHead = list.pHead;
+    NODE* pPrev = list.pLast;
+    NODE* pNew;
+    while (!feof(fp)) {
+        if (binaryFile) {
+            tempBook = GetBookFromBinaryFile(fp, bookId);
+        } else {
+            tempBook = GetBookFromFile(fp, bookId);
+        }
+        if (tempBook.bookId != -1) {
+            pNew = (NODE*) malloc(sizeof(NODE));
+            if (pNew) {
+                pNew->data = tempBook;
+                if (pHead == NULL) {
+                    pHead = pNew;
+                }
+                pNew->link = NULL;
+                if (pPrev != NULL) {
+                    pPrev->link = pNew;
+                }
+                pPrev = pNew;
+                bookId++;
+            } else {
+                printf("Error couldn't allocate memory for node.\n");
+            }
+        }
+        
+        if (!binaryFile) {
+            //Don't try to keep reading if there's extra newlines at the end of a line or the file
+            DestroyNewlinesAndCarriageReturns(fp);
+        }
+    }
+    
+    newHeader.pHead = pHead;
+    newHeader.numBooks = bookId;
+    newHeader.pLast = pPrev;
+    newHeader.listInitialized = list.listInitialized;
+    
+    printf("Appended %d books to linked list.\n\n", newHeader.numBooks - list.numBooks);
+    
+    return newHeader;
+}
+
+HEADER AppendLinkedListFromDefaultFile(char* fileName, HEADER list) {
     /*
      Grab all books in format (Title, Author, Year Published)
      from file at fileName. Append to the end of the linked list "list".
@@ -180,53 +282,60 @@ HEADER AppendLinkedList(char* fileName, HEADER list) {
     
     FILE* fp;
     HEADER newHeader;
-    BOOK tempBook;
-    int bookId = list.numBooks;
-    NODE* pHead = list.pHead;
-    NODE* pPrev = list.pLast;
-    NODE* pNew;
     
     if ((fp = OpenFileInReadMode(fileName)) == NULL) {
         printf("Error. Couldn't open file.\n");
         newHeader.pHead = NULL;
         newHeader.numBooks = 0;
     } else {
-        while (!feof(fp)) {
-            tempBook = GetBookFromFile(fp, bookId);
-            if (tempBook.bookId == -1) {
-                printf("Error reading book.\n");
-            } else {
-                pNew = (NODE*) malloc(sizeof(NODE));
-                if (pNew) {
-                    pNew->data = tempBook;
-                    if (pHead == NULL) {
-                        pHead = pNew;
-                    }
-                    pNew->link = NULL;
-                    if (pPrev != NULL) {
-                        pPrev->link = pNew;
-                    }
-                    pPrev = pNew;
-                    bookId++;
-                } else {
-                    printf("Error couldn't allocate memory for node.\n");
-                }
-            }
-            
-            //Don't try to keep reading if there's extra newlines at the end of a line or the file
-            DestroyNewlinesAndCarriageReturns(fp);
-        }
-        
-        newHeader.pHead = pHead;
-        newHeader.numBooks = bookId;
-        newHeader.pLast = pPrev;
-        newHeader.listInitialized = list.listInitialized;
+        newHeader = AppendLinkedList(list, fp, 0);
     }
-    printf("Appended %d books to linked list.\n\n", newHeader.numBooks - list.numBooks);
     
     fclose(fp);
     
     return newHeader;
+}
+
+HEADER AppendLinkedListFromUserBinaryFile(HEADER list) {
+    FILE* fp;
+    HEADER newHeader;
+    
+    fp = OpenReadBinaryFile();
+    if (fp == NULL) {
+        newHeader = list;
+        printf("Couldn't open file.\n");
+        return newHeader;
+    }
+    putchar('\n');
+    newHeader = AppendLinkedList(list, fp, 1);
+    
+    return newHeader;
+}
+
+FILE* OpenReadBinaryFile(void) {
+    /*
+     Attempt to open a file in read binary mode and return a pointer to that
+     file stream.
+     User is prompted for filename and given several options if file already
+     exists. There is also an option to use a default filename.
+     */
+    
+    FILE* fp = NULL;
+    char fileName[MAXFILENAMESIZE];
+    int fullFilePathSize = strlen(DEFAULTFILEPATH) + MAXFILENAMESIZE;
+    char fullFileName[fullFilePathSize + 1];
+    
+    do {
+        GetFileNameFromUser(fileName);
+        if (fileName[0] != 'q') {
+            AppendFileNameToFilePath(fileName, DEFAULTFILEPATH, fullFileName, fullFilePathSize);
+            if ((fp = fopen(fullFileName, "rb")) == NULL) {
+                printf("Couldn't find file. Try again.\n");
+            }
+        } 
+    } while(fp == NULL && fileName[0] != 'q');
+    
+    return fp;
 }
 
 FILE* OpenFileInReadMode(char* fileName) {
@@ -294,6 +403,19 @@ BOOK GetBookFromFile(FILE* fp, int bookId) {
     strncpy(tempBook.author, author, MAXAUTHOR);
     strncpy(tempBook.published, published, MAXYEAR);
     
+    return tempBook;
+}
+
+BOOK GetBookFromBinaryFile(FILE* fp, int bookId) {
+    BOOK tempBook;
+    
+    if (fread(&tempBook, sizeof(BOOK), 1, fp) != 1) {
+        //In case ID was overwritten by fRead. Make sure
+        //book ID is -1 so that we can handle error in return function.
+        tempBook.bookId = -1;
+        return tempBook;
+    }
+    tempBook.bookId = bookId;
     return tempBook;
 }
 
@@ -462,16 +584,18 @@ FILE* OpenWrBinaryFile(char* fullFileName, int fullFilePathSize, char* fileName)
      */
     
     int fileOption = -1;
-    int fileExists;
+    int fileExists = 0;
     FILE* fPt;
     
     do {
         GetFileNameFromUser(fileName);
-        AppendFileNameToFilePath(fileName, DEFAULTFILEPATH, fullFileName, fullFilePathSize);
-        if ((fileExists = CheckFileExists(fullFileName)) == 1) {
-            fileOption = GetUserFileOption(fileName);
+        if (fileName[0] != 'q') {
+            AppendFileNameToFilePath(fileName, DEFAULTFILEPATH, fullFileName, fullFilePathSize);
+            if ((fileExists = CheckFileExists(fullFileName)) == 1) {
+                fileOption = GetUserFileOption(fileName);
+            }
         }
-    } while(fileExists && fileOption == RENAME);
+    } while(fileExists && fileOption == RENAME && fileName[0] != 'q');
     
     if (fileExists == 0 || fileOption == OVERWRITE) {
         fPt = fopen(fullFileName, "wb");
@@ -488,6 +612,7 @@ void GetFileNameFromUser(char* fileName) {
      */
     
     printf("The default file name is: %s\n", DEFAULTFILENAME);
+    printf("Enter 'q' to abort.\n");
     printf("Enter a file name up to %d chars: ", MAXFILENAMESIZE);
     fgets(fileName, MAXFILENAMESIZE, stdin);
     if (fileName[0] == '\n') {
@@ -547,328 +672,359 @@ int GetUserFileOption(const char* fileName) {
     return fileOption;
 }
 
+void LinkedListSelectionSort(HEADER* list) {
+    /*
+     Sorting linked list using selection sort.
+     Loop through list one more time and set
+     all book IDs to be correct.
+     Have to do second pass through list since
+     selection sort is unstable so the book IDs
+     become out of order during the sorting.
+     */
+    
+    NODE* pCur = list->pHead;
+    while(pCur != NULL) {
+        NODE* pMin = pCur;
+        NODE* pWalker = pCur->link;
+        while (pWalker != NULL) {
+            if (strncmp(pMin->data.author, pWalker->data.author, MAXAUTHOR) > 0) { //TODO: Change to case insensitive string compare
+                pMin = pWalker;
+            }
+            pWalker = pWalker->link;
+        }
+        
+        //Swap all node connections i.e. swap places of nodes in linked list
+        BOOK tempBook = pCur->data;
+        pCur->data = pMin->data;
+        pMin->data = tempBook;
+        
+        pCur = pCur->link;
+    }
+    
+    int count = 0;
+    NODE* pWalker = list->pHead;
+    while(pWalker != NULL) {
+        pWalker->data.bookId = count;
+        
+        count++;
+        pWalker = pWalker->link;
+    }
+    
+    printf("Sorted list using selection sort.\n\n");
+}
 
-//HW #14, Noah Turnquist
+
+//HW #15, Noah Turnquist
 //Please select one of the options by entering the cooresponding number.
 //Initialize the list: (1)
-//Exit the program: (5)
+//Exit the program: (8)
 //1
 //
 //Initialized list. Ready for appending.
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
-//Append data from file to the list: (2)
-//Exit the program: (5)
+//Append data from default file to the list: (2)
+//Append data from binary file to the list: (3)
+//Exit the program: (8)
 //2
 //
 //Appended 15 books to linked list.
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
+//Append data from default file to the list: (2)
+//Append data from binary file to the list: (3)
+//Write the list out to a binary file: (4)
+//Get info on a book: (5)
+//Print all books in list: (6)
+//Sort the list using selection sort: (7)
+//Exit the program: (8)
 //2
 //
 //Appended 15 books to linked list.
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
+//Append data from default file to the list: (2)
+//Append data from binary file to the list: (3)
+//Write the list out to a binary file: (4)
+//Get info on a book: (5)
+//Print all books in list: (6)
+//Sort the list using selection sort: (7)
+//Exit the program: (8)
+//6
+//
+//ID    Title                                              Author                                             Year
+//--    -----                                              ------                                             ----
+//0     On Basilisk Station                                Weber, David                                       (1993)
+//1     The Sum of All Fears                               Clancy, Tom                                        (1992)
+//2     Battle Born                                        Brown, Dale                                        (1999)
+//3     Between Planets                                    Heinlein, Robert A.                                (1953)
+//4     Stranger in a Strange Land                         Heinlein, Robert A.                                (1959)
+//5     A Soldier's Duty                                   Johnson, Jean                                      (2011)
+//6     Swords Against Wizardry                            Leiber, Fritz                                      (1968)
+//7     The Mote in God's Eye                              Niven, Larry                                       (1992)
+//8     Uncharted Stars                                    Norton, Andre                                      (1968)
+//9     Raising Steam                                      Pratchett, Terry                                   (2013)
+//10    Ender's Game                                       Card, Orson Scott                                  (1977)
+//11    Foundation and Empire                              Asimov, Issac                                      (1951)
+//12    I, Robot                                           Asimov, Issac                                      (1950)
+//13    The Hitchiker's guide to the Universe              Adams, Douglas                                     (1979)
+//14    C Primer Plus                                      Prata, Stephen                                     (2014)
+//15    On Basilisk Station                                Weber, David                                       (1993)
+//16    The Sum of All Fears                               Clancy, Tom                                        (1992)
+//17    Battle Born                                        Brown, Dale                                        (1999)
+//18    Between Planets                                    Heinlein, Robert A.                                (1953)
+//19    Stranger in a Strange Land                         Heinlein, Robert A.                                (1959)
+//20    A Soldier's Duty                                   Johnson, Jean                                      (2011)
+//21    Swords Against Wizardry                            Leiber, Fritz                                      (1968)
+//22    The Mote in God's Eye                              Niven, Larry                                       (1992)
+//23    Uncharted Stars                                    Norton, Andre                                      (1968)
+//24    Raising Steam                                      Pratchett, Terry                                   (2013)
+//25    Ender's Game                                       Card, Orson Scott                                  (1977)
+//26    Foundation and Empire                              Asimov, Issac                                      (1951)
+//27    I, Robot                                           Asimov, Issac                                      (1950)
+//28    The Hitchiker's guide to the Universe              Adams, Douglas                                     (1979)
+//29    C Primer Plus                                      Prata, Stephen                                     (2014)
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from default file to the list: (2)
+//Append data from binary file to the list: (3)
+//Write the list out to a binary file: (4)
+//Get info on a book: (5)
+//Print all books in list: (6)
+//Sort the list using selection sort: (7)
+//Exit the program: (8)
+//7
+//
+//Sorted list using selection sort.
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from default file to the list: (2)
+//Append data from binary file to the list: (3)
+//Write the list out to a binary file: (4)
+//Get info on a book: (5)
+//Print all books in list: (6)
+//Sort the list using selection sort: (7)
+//Exit the program: (8)
+//6
+//
+//ID    Title                                              Author                                             Year
+//--    -----                                              ------                                             ----
+//0     The Hitchiker's guide to the Universe              Adams, Douglas                                     (1979)
+//1     The Hitchiker's guide to the Universe              Adams, Douglas                                     (1979)
+//2     Foundation and Empire                              Asimov, Issac                                      (1951)
+//3     I, Robot                                           Asimov, Issac                                      (1950)
+//4     Foundation and Empire                              Asimov, Issac                                      (1951)
+//5     I, Robot                                           Asimov, Issac                                      (1950)
+//6     Battle Born                                        Brown, Dale                                        (1999)
+//7     Battle Born                                        Brown, Dale                                        (1999)
+//8     Ender's Game                                       Card, Orson Scott                                  (1977)
+//9     Ender's Game                                       Card, Orson Scott                                  (1977)
+//10    The Sum of All Fears                               Clancy, Tom                                        (1992)
+//11    The Sum of All Fears                               Clancy, Tom                                        (1992)
+//12    Between Planets                                    Heinlein, Robert A.                                (1953)
+//13    Between Planets                                    Heinlein, Robert A.                                (1953)
+//14    Stranger in a Strange Land                         Heinlein, Robert A.                                (1959)
+//15    Stranger in a Strange Land                         Heinlein, Robert A.                                (1959)
+//16    A Soldier's Duty                                   Johnson, Jean                                      (2011)
+//17    A Soldier's Duty                                   Johnson, Jean                                      (2011)
+//18    Swords Against Wizardry                            Leiber, Fritz                                      (1968)
+//19    Swords Against Wizardry                            Leiber, Fritz                                      (1968)
+//20    The Mote in God's Eye                              Niven, Larry                                       (1992)
+//21    The Mote in God's Eye                              Niven, Larry                                       (1992)
+//22    Uncharted Stars                                    Norton, Andre                                      (1968)
+//23    Uncharted Stars                                    Norton, Andre                                      (1968)
+//24    C Primer Plus                                      Prata, Stephen                                     (2014)
+//25    C Primer Plus                                      Prata, Stephen                                     (2014)
+//26    Raising Steam                                      Pratchett, Terry                                   (2013)
+//27    Raising Steam                                      Pratchett, Terry                                   (2013)
+//28    On Basilisk Station                                Weber, David                                       (1993)
+//29    On Basilisk Station                                Weber, David                                       (1993)
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from default file to the list: (2)
+//Append data from binary file to the list: (3)
+//Write the list out to a binary file: (4)
+//Get info on a book: (5)
+//Print all books in list: (6)
+//Sort the list using selection sort: (7)
+//Exit the program: (8)
 //4
 //
-//Enter the id for a book whose info you would like printed.
-//Valid id's range from 0 to 29.
-//22
-//
-//Found book at ID #22
-//Title: The Mote in God's Eye
-//Author: Niven, Larry
-//Year published: 1992
+//The default file name is: default
+//Enter 'q' to abort.
+//Enter a file name up to 20 chars:
+//Successfully opened file.
+//Successfully wrote book The Hitchiker's guide to the Universe to file default
+//Successfully wrote book The Hitchiker's guide to the Universe to file default
+//Successfully wrote book Foundation and Empire to file default
+//Successfully wrote book I, Robot to file default
+//Successfully wrote book Foundation and Empire to file default
+//Successfully wrote book I, Robot to file default
+//Successfully wrote book Battle Born to file default
+//Successfully wrote book Battle Born to file default
+//Successfully wrote book Ender's Game to file default
+//Successfully wrote book Ender's Game to file default
+//Successfully wrote book The Sum of All Fears to file default
+//Successfully wrote book The Sum of All Fears to file default
+//Successfully wrote book Between Planets to file default
+//Successfully wrote book Between Planets to file default
+//Successfully wrote book Stranger in a Strange Land to file default
+//Successfully wrote book Stranger in a Strange Land to file default
+//Successfully wrote book A Soldier's Duty to file default
+//Successfully wrote book A Soldier's Duty to file default
+//Successfully wrote book Swords Against Wizardry to file default
+//Successfully wrote book Swords Against Wizardry to file default
+//Successfully wrote book The Mote in God's Eye to file default
+//Successfully wrote book The Mote in God's Eye to file default
+//Successfully wrote book Uncharted Stars to file default
+//Successfully wrote book Uncharted Stars to file default
+//Successfully wrote book C Primer Plus to file default
+//Successfully wrote book C Primer Plus to file default
+//Successfully wrote book Raising Steam to file default
+//Successfully wrote book Raising Steam to file default
+//Successfully wrote book On Basilisk Station to file default
+//Successfully wrote book On Basilisk Station to file default
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
+//Append data from default file to the list: (2)
+//Append data from binary file to the list: (3)
+//Write the list out to a binary file: (4)
+//Get info on a book: (5)
+//Print all books in list: (6)
+//Sort the list using selection sort: (7)
+//Exit the program: (8)
 //3
 //
 //The default file name is: default
-//Enter a file name up to 20 chars: HW14Data
-//Successfully opened file.
-//Successfully wrote book On Basilisk Station to file HW14Data
-//Successfully wrote book The Sum of All Fears to file HW14Data
-//Successfully wrote book Battle Born to file HW14Data
-//Successfully wrote book Between Planets to file HW14Data
-//Successfully wrote book Stranger in a Strange Land to file HW14Data
-//Successfully wrote book A Soldier's Duty to file HW14Data
-//Successfully wrote book Swords Against Wizardry to file HW14Data
-//Successfully wrote book The Mote in God's Eye to file HW14Data
-//Successfully wrote book Uncharted Stars to file HW14Data
-//Successfully wrote book Raising Steam to file HW14Data
-//Successfully wrote book Ender's Game to file HW14Data
-//Successfully wrote book Foundation and Empire to file HW14Data
-//Successfully wrote book I, Robot to file HW14Data
-//Successfully wrote book The Hitchiker's guide to the Universe to file HW14Data
-//Successfully wrote book C Primer Plus to file HW14Data
-//Successfully wrote book On Basilisk Station to file HW14Data
-//Successfully wrote book The Sum of All Fears to file HW14Data
-//Successfully wrote book Battle Born to file HW14Data
-//Successfully wrote book Between Planets to file HW14Data
-//Successfully wrote book Stranger in a Strange Land to file HW14Data
-//Successfully wrote book A Soldier's Duty to file HW14Data
-//Successfully wrote book Swords Against Wizardry to file HW14Data
-//Successfully wrote book The Mote in God's Eye to file HW14Data
-//Successfully wrote book Uncharted Stars to file HW14Data
-//Successfully wrote book Raising Steam to file HW14Data
-//Successfully wrote book Ender's Game to file HW14Data
-//Successfully wrote book Foundation and Empire to file HW14Data
-//Successfully wrote book I, Robot to file HW14Data
-//Successfully wrote book The Hitchiker's guide to the Universe to file HW14Data
-//Successfully wrote book C Primer Plus to file HW14Data
+//Enter 'q' to abort.
+//Enter a file name up to 20 chars:
+//
+//Appended 30 books to linked list.
 //
 //Please select one of the options by entering the cooresponding number.
 //Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
-//1
-//
-//Deleted list.
-//
-//Please select one of the options by entering the cooresponding number.
-//Initialize the list: (1)
-//Exit the program: (5)
-//1
-//
-//Initialized list. Ready for appending.
-//
-//Please select one of the options by entering the cooresponding number.
-//Delete the list: (1)
-//Append data from file to the list: (2)
-//Exit the program: (5)
-//2
-//
-//Appended 15 books to linked list.
-//
-//Please select one of the options by entering the cooresponding number.
-//Delete the list: (1)
-//Append data from file to the list: (2)
-//Write the list out to a binary file: (3)
-//Get info on a book: (4)
-//Exit the program: (5)
+//Append data from default file to the list: (2)
+//Append data from binary file to the list: (3)
+//Write the list out to a binary file: (4)
+//Get info on a book: (5)
+//Print all books in list: (6)
+//Sort the list using selection sort: (7)
+//Exit the program: (8)
 //5
+//
+//Enter the id for a book whose info you would like printed.
+//Valid id's range from 0 to 59.
+//48
+//
+//Found book at ID #48
+//Title: Swords Against Wizardry
+//Author: Leiber, Fritz
+//Year published: 1968
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from default file to the list: (2)
+//Append data from binary file to the list: (3)
+//Write the list out to a binary file: (4)
+//Get info on a book: (5)
+//Print all books in list: (6)
+//Sort the list using selection sort: (7)
+//Exit the program: (8)
+//7
+//
+//Sorted list using selection sort.
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from default file to the list: (2)
+//Append data from binary file to the list: (3)
+//Write the list out to a binary file: (4)
+//Get info on a book: (5)
+//Print all books in list: (6)
+//Sort the list using selection sort: (7)
+//Exit the program: (8)
+//6
+//
+//ID    Title                                              Author                                             Year
+//--    -----                                              ------                                             ----
+//0     The Hitchiker's guide to the Universe              Adams, Douglas                                     (1979)
+//1     The Hitchiker's guide to the Universe              Adams, Douglas                                     (1979)
+//2     The Hitchiker's guide to the Universe              Adams, Douglas                                     (1979)
+//3     The Hitchiker's guide to the Universe              Adams, Douglas                                     (1979)
+//4     Foundation and Empire                              Asimov, Issac                                      (1951)
+//5     I, Robot                                           Asimov, Issac                                      (1950)
+//6     Foundation and Empire                              Asimov, Issac                                      (1951)
+//7     I, Robot                                           Asimov, Issac                                      (1950)
+//8     Foundation and Empire                              Asimov, Issac                                      (1951)
+//9     I, Robot                                           Asimov, Issac                                      (1950)
+//10    Foundation and Empire                              Asimov, Issac                                      (1951)
+//11    I, Robot                                           Asimov, Issac                                      (1950)
+//12    Battle Born                                        Brown, Dale                                        (1999)
+//13    Battle Born                                        Brown, Dale                                        (1999)
+//14    Battle Born                                        Brown, Dale                                        (1999)
+//15    Battle Born                                        Brown, Dale                                        (1999)
+//16    Ender's Game                                       Card, Orson Scott                                  (1977)
+//17    Ender's Game                                       Card, Orson Scott                                  (1977)
+//18    Ender's Game                                       Card, Orson Scott                                  (1977)
+//19    Ender's Game                                       Card, Orson Scott                                  (1977)
+//20    The Sum of All Fears                               Clancy, Tom                                        (1992)
+//21    The Sum of All Fears                               Clancy, Tom                                        (1992)
+//22    The Sum of All Fears                               Clancy, Tom                                        (1992)
+//23    The Sum of All Fears                               Clancy, Tom                                        (1992)
+//24    Between Planets                                    Heinlein, Robert A.                                (1953)
+//25    Between Planets                                    Heinlein, Robert A.                                (1953)
+//26    Stranger in a Strange Land                         Heinlein, Robert A.                                (1959)
+//27    Stranger in a Strange Land                         Heinlein, Robert A.                                (1959)
+//28    Between Planets                                    Heinlein, Robert A.                                (1953)
+//29    Between Planets                                    Heinlein, Robert A.                                (1953)
+//30    Stranger in a Strange Land                         Heinlein, Robert A.                                (1959)
+//31    Stranger in a Strange Land                         Heinlein, Robert A.                                (1959)
+//32    A Soldier's Duty                                   Johnson, Jean                                      (2011)
+//33    A Soldier's Duty                                   Johnson, Jean                                      (2011)
+//34    A Soldier's Duty                                   Johnson, Jean                                      (2011)
+//35    A Soldier's Duty                                   Johnson, Jean                                      (2011)
+//36    Swords Against Wizardry                            Leiber, Fritz                                      (1968)
+//37    Swords Against Wizardry                            Leiber, Fritz                                      (1968)
+//38    Swords Against Wizardry                            Leiber, Fritz                                      (1968)
+//39    Swords Against Wizardry                            Leiber, Fritz                                      (1968)
+//40    The Mote in God's Eye                              Niven, Larry                                       (1992)
+//41    The Mote in God's Eye                              Niven, Larry                                       (1992)
+//42    The Mote in God's Eye                              Niven, Larry                                       (1992)
+//43    The Mote in God's Eye                              Niven, Larry                                       (1992)
+//44    Uncharted Stars                                    Norton, Andre                                      (1968)
+//45    Uncharted Stars                                    Norton, Andre                                      (1968)
+//46    Uncharted Stars                                    Norton, Andre                                      (1968)
+//47    Uncharted Stars                                    Norton, Andre                                      (1968)
+//48    C Primer Plus                                      Prata, Stephen                                     (2014)
+//49    C Primer Plus                                      Prata, Stephen                                     (2014)
+//50    C Primer Plus                                      Prata, Stephen                                     (2014)
+//51    C Primer Plus                                      Prata, Stephen                                     (2014)
+//52    Raising Steam                                      Pratchett, Terry                                   (2013)
+//53    Raising Steam                                      Pratchett, Terry                                   (2013)
+//54    Raising Steam                                      Pratchett, Terry                                   (2013)
+//55    Raising Steam                                      Pratchett, Terry                                   (2013)
+//56    On Basilisk Station                                Weber, David                                       (1993)
+//57    On Basilisk Station                                Weber, David                                       (1993)
+//58    On Basilisk Station                                Weber, David                                       (1993)
+//59    On Basilisk Station                                Weber, David                                       (1993)
+//
+//Please select one of the options by entering the cooresponding number.
+//Delete the list: (1)
+//Append data from default file to the list: (2)
+//Append data from binary file to the list: (3)
+//Write the list out to a binary file: (4)
+//Get info on a book: (5)
+//Print all books in list: (6)
+//Sort the list using selection sort: (7)
+//Exit the program: (8)
+//8
 //
 //Exiting program.
 //Program ended with exit code: 0
-
-
-/*
- TEST PLAN
- 
- TEST - GetMenuOptionFromUser()
- 
- ---Unitialized list---
- 
- 1. Run the program. The list should be uninitialized by default.
- - The only menu options are: Initialize the list, exit
- 
- 2. Run the program. The list should be uninitialized by default.
-    Select the option to initialize the list, '1'. Should exit function and return userChoice.
- 
- 3. Run the program. The list should be uninitialized by default.
-    Select the option to exit the program, '5'. Should exit function function and then exit the program.
- 
- 4. Run the program. The list should be uninitialized by default.
-    Enter a non digit, 'c'. Should give error message and then ask you to try again.
- 
- 5. Run the program. The list should be uninitialized by default.
-    Enter an invalid list option, '2' . Should give error message and then ask you to try again.
- 
- 6. Run the program. The list should be uninitialized by default.
-    Enter too many characters , 'hello' . Should give error message and then ask you to try again.
- 
- 7. Run the program. The list should be uninitialized by default.
-    Enter valid character and then invalid characters , '1awdada' . Should exit function and return userChoice.
- 
- 8. Run the program. The list should be uninitialized by default.
-    Enter invalid character and then valid character , 'adwadawda1' . Should give error message and then ask you to try again.
- 
- ---Initialized list/EMPTY LIST---
- 
- 1. Run the program. Hit 1 to initialize the list.
- - The menu option should be to: delete, append, and exit.
- 
- 2. Run the program. Hit 1 to initialize the list.
- - Select a valid option, '2'. Should exit function and return userChoice.
- 
- 3. Run the program. Hit 1 to initialize the list.
-    Select the option to exit the program, '5'. Should exit function function and then exit the program.
- 
- 4. Run the program. Hit 1 to initialize the list.
-    Enter a non digit, 'c'. Should give error message and then ask you to try again.
- 
- 5. Run the program. Hit 1 to initialize the list.
-    Enter an invalid list option, '7' . Should give error message and then ask you to try again.
- 
- 6. Run the program. Hit 1 to initialize the list.
-    Enter too many characters , 'hello' . Should give error message and then ask you to try again.
- 
- 7. Run the program. Hit 1 to initialize the list.
-    Enter valid character and then invalid characters , '2awdada' . Should exit function and return userChoice.
- 
- 8. Run the program. Hit 1 to initialize the list.
-    Enter invalid character and then valid character , 'adwadawda1' . Should give error message and then ask you to try again.
- 
- 
- ---Initialized list/EMPTY LIST---
- 
- 1. Run the program. Hit 1 to initialize the list.
-    Hit 2 to append to the list
- - Should now have menu options for delete, append, write, get info, and exit
- 
- 2. Run the program. Hit 1 to initialize the list.
-    Hit 2 to append to the list
-    Hit 4 to test menu
- - Should print message and return userChoice
- 
- 3. Run the program. Hit 1 to initialize the list.
-    Hit 2 to append to the list
-    Hit 6 to test menu
- - Should print error message and ask you to try again
- 
- 
- 
- TEST - InitializeOrDeleteLinkedList()
- 
- --- Test AppendLinkedList() ---
- 
- 1. Start program, initialize list by selecting 1
-    Hit 2 to append some books to list
-    On next menu print some books using print book info option
- - Try a book somewhere in the middle of the list. Make sure info is as expected
- 
- 2. Start program, initialize list by selecting 1
-    Hit 2 to append some books to list
-    On next menu print some books using print book info option
- - Try a book at the beginning of the list. Make sure info is as expected
- 
- 3. Start program, initialize list by selecting 1
-    Hit 2 to append some books to list
-    On next menu print some books using print book info option
- - Try a book at the end of the list. Make sure info is as expected
- 
- 4. Start program, initialize list by selecting 1
-    Hit 2 to append some books to list
-    Hit 2 again to append more books to the end of the list
-    On next menu print some books using print book info option
- - Try a book somewhere in the middle of the list. Make sure info is as expected
- 
- 5. Start program, initialize list by selecting 1
-    Hit 2 to append books to the end of the list
-    On next menu print some books using print book info option
-    Hit 2 to append more books to the end of the list
- - Try a book at the beginning of the list. Make sure info is as expected
- 
- 6. Start program, initialize list by selecting 1
-    On next menu print some books using print book info option
-    Hit 2 to append some books to list
-    Hit 2 to append more books to the end of the list
- - Try a book at the end of the list. Make sure info is as expected
- 
- *** Test OpenFileInReadMode() ***
- 1. Use bad filepath or filename.
- - Should print error message, and then go back to menu without initializing list.
- 
- 2. Use valid filename and filepath. Add breakpoint to check file pointer, fp, was opened correctly.
- - fp should be pointing to expected file.
- 
- *** Test GetBookFromFile() ***
- 1. Add breakpoint after GetBookFromFile() call.
- - Check that the tempBook object was created correctly and all of the member variables are as expected.
- 
- 2. Add breakpoint after GetBookFromFile() call.
-    Add a newline with some gibberish to the end of the read file.
- - Should read all of the books correctly. Once you reach the line with gibberish, should give error about not being able to read book, and then go back to menu.
- 
- 
- --- Test DeleteLinkedList() ---
- 1. Run program. Hit 1 to initialize the list.
-    Hit 1 the second time the menu pops up to delete the list.
- - Add breakpoint in menu and make sure that HEADER has pHead = NULL, pLast = NULL, listInitialized = 0, and numBooks = 0, meaning the list was deleted.
- 
- 2. Run program. Hit 1 to initialize list, Hit 2 to append data to list.
-    Hit 1 the next time the menu pops up to delete the list.
- - Add breakpoint in menu and make sure that HEADER has pHead = NULL, pLast = NULL, listInitialized = 0, and numBooks = 0, meaning the list was deleted.
- 
- 3. Run program. Hit 1 to initialize list, Hit 2 to append data to list. Hit 2 to append more data to list
-    Hit 1 the next time the menu pops up to delete the list.
- - Add breakpoint in menu and make sure that HEADER has pHead = NULL, pLast = NULL, listInitialized = 0, and numBooks = 0, meaning the list was deleted.
- 
- 
- --- Test GetBookIdFromUser() ---
- 
- 1. Run program. Hit 1 to initialize the list.
-    Hit 2 to append more books to end of list
-    Hit 4 to get book info.
- - Enter a valid id somewhere in the middle and make sure the expected info is printed
- 
- 2. Run program. Hit 1 to initialize the list.
-    Hit 2 to append more books to end of list
-    Hit 4 to get book info.
- - Enter a valid id at the beginning of the list, '0', and make sure the expected info is printed
- 
- 3. Run program. Hit 1 to initialize the list.
-    Hit 2 to append more books to end of list
-    Hit 4 to get book info.
- - Enter the last valid id in the list and make sure the expected info is printed
- 
- 4. Run program. Hit 1 to initialize the list.
-    Hit 2 to append more books to end of list
-    Hit 4 to get book info.
- - Enter some letters, 'adwagwaf'.
- - Should print error message and ask you to try again.
- 
- 5. Run program. Hit 1 to initialize the list.
-    Hit 2 to append more books to end of list
-    Hit 4 to get book info.
- - Enter a id that's invalid, '99'.
- - Should print error message and ask you to try again.
- 
- 6. Run program. Hit 1 to initialize the list.
-    Hit 2 to append more books to end of list
-    Hit 4 to get book info.
- - Enter some gibberish followed by a valid id 'a5'.
- - Should print error message and ask you to try again.
- 
- 7. Run program. Hit 1 to initialize the list.
-    Hit 2 to append more books to end of list
-    Hit 4 to get book info.
- - Enter a id that's valid followed by invalid characters, '5adwadw'.
- - Should print error message and ask you to try again.
- 
- 
- --- Test WriteListToBinaryFile() ---
- * All user input behavior doesn't need to be tested since those functions were stolen
- from HW13 and were fully tested in that assignment. *
- 
- 1. Run program. Hit 1 to initialize list.
-    Hit 3 to output list. Use any filename desired.
- - Should see 15 books being written out, starting with 'On Basilisk Station' and ending with 'C Primer Plus'
- - Look at file and make sure contents look roughly correct.
- 
- 2. Run program. Hit 1 to initialize list.
-    Hit 2 to append more data to end of list.
-    Hit 3 to output list. Use any filename desired.
- - Should see 30 books being written out, starting with 'On Basilisk Station' and ending with 'C Primer Plus'
- - Should be two identical lists one after another.
- - Look at file and make sure contents look roughly correct.
- 
- */
