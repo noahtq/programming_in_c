@@ -297,6 +297,11 @@ HEADER AppendLinkedListFromDefaultFile(char* fileName, HEADER list) {
 }
 
 HEADER AppendLinkedListFromUserBinaryFile(HEADER list) {
+    /*
+     Open a binary file specified by the user and append
+     the contents to the end of the linked list, list.
+     */
+    
     FILE* fp;
     HEADER newHeader;
     
@@ -304,10 +309,10 @@ HEADER AppendLinkedListFromUserBinaryFile(HEADER list) {
     if (fp == NULL) {
         newHeader = list;
         printf("Couldn't open file.\n");
-        return newHeader;
+    } else {
+        putchar('\n');
+        newHeader = AppendLinkedList(list, fp, 1);
     }
-    putchar('\n');
-    newHeader = AppendLinkedList(list, fp, 1);
     
     return newHeader;
 }
@@ -407,6 +412,12 @@ BOOK GetBookFromFile(FILE* fp, int bookId) {
 }
 
 BOOK GetBookFromBinaryFile(FILE* fp, int bookId) {
+    /*
+     Get a BOOK object from the binary file fp.
+     If a book can't be retrieved, flag this by
+     returning a book with an ID of -1.
+     */
+    
     BOOK tempBook;
     
     if (fread(&tempBook, sizeof(BOOK), 1, fp) != 1) {
@@ -687,13 +698,13 @@ void LinkedListSelectionSort(HEADER* list) {
         NODE* pMin = pCur;
         NODE* pWalker = pCur->link;
         while (pWalker != NULL) {
-            if (strncmp(pMin->data.author, pWalker->data.author, MAXAUTHOR) > 0) { //TODO: Change to case insensitive string compare
+            if (strncmp(pMin->data.author, pWalker->data.author, MAXAUTHOR) > 0) {
                 pMin = pWalker;
             }
             pWalker = pWalker->link;
         }
         
-        //Swap all node connections i.e. swap places of nodes in linked list
+        //Swap data in nodes so they are in correct order
         BOOK tempBook = pCur->data;
         pCur->data = pMin->data;
         pMin->data = tempBook;
