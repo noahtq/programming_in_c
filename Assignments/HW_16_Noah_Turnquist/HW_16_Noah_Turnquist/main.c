@@ -6,10 +6,13 @@
 
 #define MAXFACTORIAL 20
 #define EXITVAL 0
+#define BITSINBYTE 8
 #define FLUSH while(getchar() != '\n')
 
 int GetNumFromUser(void);
 unsigned long long Factorial(unsigned long long n);
+void FindMaxFactorialByType(int shifts);
+void printBits(size_t const size, void const * const ptr); //TODO: Remove this function
 
 int main(int argc, const char * argv[]) {
     int userNum = 1;
@@ -25,8 +28,12 @@ int main(int argc, const char * argv[]) {
         }
     }
     
-    //Print out max factorial value that can be held in a 4-byte int
-    //Print out max facrotial value that can be held in a 8-byte int
+    putchar('\n');
+    FindMaxFactorialByType(sizeof(int));
+    putchar('\n');
+    FindMaxFactorialByType(sizeof(long long));
+    putchar('\n');
+    FindMaxFactorialByType(sizeof(short));
     
     return 0;
 }
@@ -60,10 +67,56 @@ int GetNumFromUser(void) {
     return userNum;
 }
 
-//n * (n - 1) * (n - 2) * ... * 1
 unsigned long long Factorial(unsigned long long n) {
+    /*
+     Use recursion to calculate a factorial
+     */
+    
     if (n <= 1) {
         return 1;
     }
     return n * Factorial(n - 1);
+}
+
+void FindMaxFactorialByType(int sizeOfType) {
+    int shifts;
+    int n = 0;
+    unsigned long long maxValue = 0;
+    unsigned long long maxFactorialValue = 0;
+    unsigned long long prevFactorialValue = 0;
+    
+    maxValue = ~maxValue >> 1;
+    shifts = (sizeof(maxValue) - sizeOfType) * BITSINBYTE;
+    
+    maxValue = maxValue >> shifts;
+//    printf("%lld\n", maxValue);
+    int i, foundMax;
+    for (i = 1, foundMax = 0; i <= MAXFACTORIAL + 1 && !foundMax; i++) {
+        maxFactorialValue = Factorial(i);
+        if (maxFactorialValue >= maxValue) {
+            maxFactorialValue = prevFactorialValue;
+            foundMax = 1;
+            n = i - 1;
+        }
+        prevFactorialValue = maxFactorialValue;
+    }
+    
+    printf("For an integer of size %d bytes,\n", sizeOfType);
+    printf("the max factorial value is %lld which is given by %d!\n", maxFactorialValue, n);
+}
+
+//TODO: Remove this function
+void printBits(size_t const size, void const * const ptr)
+{
+    unsigned char *b = (unsigned char*) ptr;
+    unsigned char byte;
+    int i, j;
+    
+    for (i = size-1; i >= 0; i--) {
+        for (j = 7; j >= 0; j--) {
+            byte = (b[i] >> j) & 1;
+            printf("%u", byte);
+        }
+    }
+    puts("");
 }
