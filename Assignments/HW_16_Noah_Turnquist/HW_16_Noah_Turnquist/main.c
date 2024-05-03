@@ -3,15 +3,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #define MAXFACTORIAL 20
 #define EXITVAL 0
 #define BITSINBYTE 8
+#define UNSIGNED "unsigned"
 #define FLUSH while(getchar() != '\n')
 
 int GetNumFromUser(void);
 unsigned long long Factorial(unsigned long long n);
-void FindMaxFactorialByType(int shifts);
+void FindMaxFactorialByType(int sizeOfType, int isSigned);
 void printBits(size_t const size, void const * const ptr); //TODO: Remove this function
 
 int main(int argc, const char * argv[]) {
@@ -20,20 +22,31 @@ int main(int argc, const char * argv[]) {
     
     printf("HW #16, Noah Turnquist\n");
     
-    while(userNum != 0) {
-        userNum = GetNumFromUser();
-        if (userNum > 0) {
-            result = Factorial((unsigned long long) userNum);
-            printf("The factorial of %d is %lld\n\n", userNum, result);
-        }
+    for (int i = 1; i < MAXFACTORIAL; i++) {
+        printf("%d: %llu\n", i, Factorial(i));
     }
     
+    //TODO: reenable this while loop once done debugging
+//    while(userNum != 0) {
+//        userNum = GetNumFromUser();
+//        if (userNum > 0) {
+//            result = Factorial((unsigned long long) userNum);
+//            printf("The factorial of %d is %lld\n\n", userNum, result);
+//        }
+//    }
+    
     putchar('\n');
-    FindMaxFactorialByType(sizeof(int));
+    FindMaxFactorialByType(sizeof(int), 1);
     putchar('\n');
-    FindMaxFactorialByType(sizeof(long long));
+    FindMaxFactorialByType(sizeof(long long), 1);
     putchar('\n');
-    FindMaxFactorialByType(sizeof(short));
+    FindMaxFactorialByType(sizeof(short), 1);
+    putchar('\n');
+    FindMaxFactorialByType(sizeof(int), 0);
+    putchar('\n');
+    FindMaxFactorialByType(sizeof(long long), 0);
+    putchar('\n');
+    FindMaxFactorialByType(sizeof(short), 0);
     
     return 0;
 }
@@ -78,18 +91,34 @@ unsigned long long Factorial(unsigned long long n) {
     return n * Factorial(n - 1);
 }
 
-void FindMaxFactorialByType(int sizeOfType) {
+//TODO: Convert this function so it can also figure out max sizes for unsigned ints
+//TODO: Currently having issue where I can't store UINT_MAX in unsigned long long.
+void FindMaxFactorialByType(int sizeOfType, int isSigned) {
     int shifts;
     int n = 0;
-    unsigned long long maxValue = 0;
+    unsigned long long maxValue = 0x7FFFFFFFFFFFFFFF;
     unsigned long long maxFactorialValue = 0;
     unsigned long long prevFactorialValue = 0;
+    char unsignedStr[strlen(UNSIGNED) + 1] = "";
     
-    maxValue = ~maxValue >> 1;
+//    if (isSigned) {
+//        maxValue = ;
+//    } else {
+//        maxValue =
+//    }
+    
+//    printBits(sizeof(maxSignedLong), &maxSignedLong);
     shifts = (sizeof(maxValue) - sizeOfType) * BITSINBYTE;
     
+//    if (isSigned) shifts--;
+    
     maxValue = maxValue >> shifts;
-//    printf("%lld\n", maxValue);
+    
+    if (!isSigned) {
+        maxValue *= 2;
+        strncpy(unsignedStr, UNSIGNED, strlen(UNSIGNED));
+    } 
+    
     int i, foundMax;
     for (i = 1, foundMax = 0; i <= MAXFACTORIAL + 1 && !foundMax; i++) {
         maxFactorialValue = Factorial(i);
@@ -101,7 +130,7 @@ void FindMaxFactorialByType(int sizeOfType) {
         prevFactorialValue = maxFactorialValue;
     }
     
-    printf("For an integer of size %d bytes,\n", sizeOfType);
+    printf("For an %s integer of size %d bytes,\n", unsignedStr, sizeOfType);
     printf("the max factorial value is %lld which is given by %d!\n", maxFactorialValue, n);
 }
 
