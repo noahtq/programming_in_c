@@ -22,31 +22,32 @@ int main(int argc, const char * argv[]) {
     
     printf("HW #16, Noah Turnquist\n");
     
-    for (int i = 1; i < MAXFACTORIAL; i++) {
-        printf("%d: %llu\n", i, Factorial(i));
+    while(userNum != 0) {
+        userNum = GetNumFromUser();
+        if (userNum > 0) {
+            result = Factorial((unsigned long long) userNum);
+            printf("The factorial of %d is %lld\n\n", userNum, result);
+        }
     }
     
-    //TODO: reenable this while loop once done debugging
-//    while(userNum != 0) {
-//        userNum = GetNumFromUser();
-//        if (userNum > 0) {
-//            result = Factorial((unsigned long long) userNum);
-//            printf("The factorial of %d is %lld\n\n", userNum, result);
-//        }
-//    }
-    
-    putchar('\n');
-    FindMaxFactorialByType(sizeof(int), 1);
-    putchar('\n');
-    FindMaxFactorialByType(sizeof(long long), 1);
+    //TODO: Add the requested here
     putchar('\n');
     FindMaxFactorialByType(sizeof(short), 1);
     putchar('\n');
+    FindMaxFactorialByType(sizeof(int), 1);
+    putchar('\n');
+    FindMaxFactorialByType(sizeof(long), 1);
+    putchar('\n');
+    FindMaxFactorialByType(sizeof(long long), 1);
+    putchar('\n');
+    FindMaxFactorialByType(sizeof(short), 0);
+    putchar('\n');
     FindMaxFactorialByType(sizeof(int), 0);
+    putchar('\n');
+    FindMaxFactorialByType(sizeof(long), 0);
     putchar('\n');
     FindMaxFactorialByType(sizeof(long long), 0);
     putchar('\n');
-    FindMaxFactorialByType(sizeof(short), 0);
     
     return 0;
 }
@@ -91,61 +92,114 @@ unsigned long long Factorial(unsigned long long n) {
     return n * Factorial(n - 1);
 }
 
-//TODO: Convert this function so it can also figure out max sizes for unsigned ints
-//TODO: Currently having issue where I can't store UINT_MAX in unsigned long long.
 void FindMaxFactorialByType(int sizeOfType, int isSigned) {
+    /*
+     Find the max factorial value for an int of a given size in bytes.
+     isSigned specifies if that int is signed or unsigned.
+     Print the max factorial value and the value n that produces that factorial.
+     */
+    
     int shifts;
     int n = 0;
     unsigned long long maxValue = 0x7FFFFFFFFFFFFFFF;
     unsigned long long maxFactorialValue = 0;
-    unsigned long long prevFactorialValue = 0;
     char unsignedStr[strlen(UNSIGNED) + 1] = "";
     
-//    if (isSigned) {
-//        maxValue = ;
-//    } else {
-//        maxValue =
-//    }
-    
-//    printBits(sizeof(maxSignedLong), &maxSignedLong);
     shifts = (sizeof(maxValue) - sizeOfType) * BITSINBYTE;
-    
-//    if (isSigned) shifts--;
-    
     maxValue = maxValue >> shifts;
     
     if (!isSigned) {
         maxValue *= 2;
         strncpy(unsignedStr, UNSIGNED, strlen(UNSIGNED));
-    } 
+    }
     
     int i, foundMax;
     for (i = 1, foundMax = 0; i <= MAXFACTORIAL + 1 && !foundMax; i++) {
-        maxFactorialValue = Factorial(i);
-        if (maxFactorialValue >= maxValue) {
-            maxFactorialValue = prevFactorialValue;
+        maxValue /= i;
+        if (maxValue == 0) {
             foundMax = 1;
             n = i - 1;
+            maxFactorialValue = Factorial(n);
         }
-        prevFactorialValue = maxFactorialValue;
     }
     
     printf("For an %s integer of size %d bytes,\n", unsignedStr, sizeOfType);
     printf("the max factorial value is %lld which is given by %d!\n", maxFactorialValue, n);
 }
 
-//TODO: Remove this function
-void printBits(size_t const size, void const * const ptr)
-{
-    unsigned char *b = (unsigned char*) ptr;
-    unsigned char byte;
-    int i, j;
-    
-    for (i = size-1; i >= 0; i--) {
-        for (j = 7; j >= 0; j--) {
-            byte = (b[i] >> j) & 1;
-            printf("%u", byte);
-        }
-    }
-    puts("");
-}
+
+//HW #16, Noah Turnquist
+//
+//Enter 0 to exit.
+//Max Value - 20
+//Please enter a number: 3
+//The factorial of 3 is 6
+//
+//
+//Enter 0 to exit.
+//Max Value - 20
+//Please enter a number: 15
+//The factorial of 15 is 1307674368000
+//
+//
+//Enter 0 to exit.
+//Max Value - 20
+//Please enter a number: 22
+//Please enter a number between 0 and 20.
+//
+//Enter 0 to exit.
+//Max Value - 20
+//Please enter a number: 250
+//Please enter a valid number.
+//
+//Enter 0 to exit.
+//Max Value - 20
+//Please enter a number: -1
+//Please enter a valid number.
+//
+//Enter 0 to exit.
+//Max Value - 20
+//Please enter a number: adawd
+//Please enter a valid number.
+//
+//Enter 0 to exit.
+//Max Value - 20
+//Please enter a number: 8
+//The factorial of 8 is 40320
+//
+//
+//Enter 0 to exit.
+//Max Value - 20
+//Please enter a number: 20
+//The factorial of 20 is 2432902008176640000
+//
+//
+//Enter 0 to exit.
+//Max Value - 20
+//Please enter a number: 0
+//
+//For an  integer of size 2 bytes,
+//the max factorial value is 5040 which is given by 7!
+//
+//For an  integer of size 4 bytes,
+//the max factorial value is 479001600 which is given by 12!
+//
+//For an  integer of size 8 bytes,
+//the max factorial value is 2432902008176640000 which is given by 20!
+//
+//For an  integer of size 8 bytes,
+//the max factorial value is 2432902008176640000 which is given by 20!
+//
+//For an unsigned integer of size 2 bytes,
+//the max factorial value is 40320 which is given by 8!
+//
+//For an unsigned integer of size 4 bytes,
+//the max factorial value is 479001600 which is given by 12!
+//
+//For an unsigned integer of size 8 bytes,
+//the max factorial value is 2432902008176640000 which is given by 20!
+//
+//For an unsigned integer of size 8 bytes,
+//the max factorial value is 2432902008176640000 which is given by 20!
+//
+//Program ended with exit code: 0
