@@ -3,18 +3,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <limits.h>
 
 #define MAXFACTORIAL 20
 #define EXITVAL 0
 #define BITSINBYTE 8
-#define UNSIGNED "unsigned"
+#define UNSIGNED "unsigned "
 #define FLUSH while(getchar() != '\n')
 
 int GetNumFromUser(void);
 unsigned long long Factorial(unsigned long long n);
 void FindMaxFactorialByType(int sizeOfType, int isSigned);
-void printBits(size_t const size, void const * const ptr); //TODO: Remove this function
 
 int main(int argc, const char * argv[]) {
     int userNum = 1;
@@ -30,7 +28,6 @@ int main(int argc, const char * argv[]) {
         }
     }
     
-    //TODO: Add the requested here
     putchar('\n');
     FindMaxFactorialByType(sizeof(short), 1);
     putchar('\n');
@@ -123,7 +120,7 @@ void FindMaxFactorialByType(int sizeOfType, int isSigned) {
         }
     }
     
-    printf("For an %s integer of size %d bytes,\n", unsignedStr, sizeOfType);
+    printf("For an %sinteger of size %d bytes,\n", unsignedStr, sizeOfType);
     printf("the max factorial value is %lld which is given by %d!\n", maxFactorialValue, n);
 }
 
@@ -159,13 +156,19 @@ void FindMaxFactorialByType(int sizeOfType, int isSigned) {
 //
 //Enter 0 to exit.
 //Max Value - 20
-//Please enter a number: adawd
+//Please enter a number: awdawd
 //Please enter a valid number.
 //
 //Enter 0 to exit.
 //Max Value - 20
 //Please enter a number: 8
 //The factorial of 8 is 40320
+//
+//
+//Enter 0 to exit.
+//Max Value - 20
+//Please enter a number: 1
+//The factorial of 1 is 1
 //
 //
 //Enter 0 to exit.
@@ -178,16 +181,16 @@ void FindMaxFactorialByType(int sizeOfType, int isSigned) {
 //Max Value - 20
 //Please enter a number: 0
 //
-//For an  integer of size 2 bytes,
+//For an integer of size 2 bytes,
 //the max factorial value is 5040 which is given by 7!
 //
-//For an  integer of size 4 bytes,
+//For an integer of size 4 bytes,
 //the max factorial value is 479001600 which is given by 12!
 //
-//For an  integer of size 8 bytes,
+//For an integer of size 8 bytes,
 //the max factorial value is 2432902008176640000 which is given by 20!
 //
-//For an  integer of size 8 bytes,
+//For an integer of size 8 bytes,
 //the max factorial value is 2432902008176640000 which is given by 20!
 //
 //For an unsigned integer of size 2 bytes,
