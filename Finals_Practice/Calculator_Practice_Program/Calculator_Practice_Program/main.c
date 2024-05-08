@@ -15,10 +15,8 @@
 
 double Calculate(char* equation);
 int NumOpNum(char* equation, double* left, char* op, double* right);
-void ParseParanthesesFromEquation(char* equation, char* tokenString, int* startIdx, int* endIdx);
 void CleanEquation(char* cleanedEquation, char* equation);
 int VerifyEquation(char* equation);
-void ReplaceChunkOfEquation(char* equation, double tempResult, int startIdx, int endIdx);
 void GetEquationFromUser(char* equation);
 
 int main(int argc, const char * argv[]) {
@@ -72,27 +70,6 @@ double Calculate(char* equation) {
         }
         return result;
     } else {
-//        char newStr[strlen(equation) + 1];
-//        
-//        
-//        //Check for parantheses
-//        char tokenString[strlen(equation) + 1];
-//        int startIdx;
-//        int endIdx;
-//        ParseParanthesesFromEquation(equation, tokenString, &startIdx, &endIdx);
-//        
-//        if (DEBUG) {
-//            printf("Token: %s\n", tokenString);
-//        }
-//        
-//        if (strlen(tokenString) > 0) {
-//            double paraResult = Calculate(tokenString);
-//            ReplaceChunkOfEquation(equation, paraResult, startIdx, endIdx);
-//            
-//            if(DEBUG) {
-//                printf("Parantheses replaced equation: %s\n", equation);
-//            }
-//        }
         
         //Check for multiplication or division
         
@@ -129,34 +106,6 @@ double Calculate(char* equation) {
 int NumOpNum(char* equation, double* left, char* op, double* right) {
     char throwaway;
     return sscanf(equation, " %lf %c %lf %c", left, op, right, &throwaway);
-}
-
-//TODO: Add error checking for user not closing their paranthesis
-//TODO: Add error checking for user starting with a closing paranthesis instead of an open one
-void ParseParanthesesFromEquation(char* equation, char* tokenString, int* startIdx, int* endIdx) {
-    int insidePara = 0;
-    int tokenStringIdx = 0;
-    int extraPara = 0;
-    
-    for (int i = 0; i < strlen(equation); i++) {
-        if (insidePara && equation[i] == '(') {
-            extraPara++;
-        }
-        if (extraPara > 0 && equation[i] == ')') {
-            extraPara--;
-        } else if (equation[i] == ')') {
-            insidePara = 0;
-            *endIdx = i;
-        }
-        if (insidePara) {
-            tokenString[tokenStringIdx] = equation[i];
-            tokenStringIdx++;
-        }
-        if (equation[i] == '(' && extraPara == 0) {
-            insidePara = 1;
-            *startIdx = i;
-        }
-    }
 }
 
 void CleanEquation(char* cleanedEquation, char* equation) {
@@ -210,19 +159,6 @@ int VerifyEquation(char* equation) {
         valid = 0;
     }
     return valid;
-}
-
-void ReplaceChunkOfEquation(char* equation, double tempResult, int startIdx, int endIdx) {
-    char resultStr[strlen(equation) + 1];
-    sprintf(resultStr, "%g", tempResult);
-    
-    for (int eqIdx = startIdx, paraIdx = 0; eqIdx <= endIdx; eqIdx++, paraIdx++) {
-        if (resultStr[paraIdx] != '\0') {
-            equation[eqIdx] = resultStr[paraIdx];
-        } else {
-            equation[eqIdx] = ' ';
-        }
-    }
 }
 
 void GetEquationFromUser(char* equation) {
